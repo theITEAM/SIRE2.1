@@ -9,3 +9,11 @@ SIRE allows for estimation of different effects that can potentially change the 
 SIRE implements a Bayesian algorithm which makes use of temporal data (consisting of any combination of recorded infection times, recovery times or disease status measurements) from multiple epidemics.
 
 Version 2.1 allow for the specification of different types of sequential compartmental model (e.g. SI, SIR, SEIR etc...) and provides flexibility to apply different effects to different aspects of the model.
+
+## Getting started
+
+The software is compiled using "make".
+
+The code is run using: "./sire examples/example1.xml 0"
+
+Here the number 0 sets the seed and can be changed.

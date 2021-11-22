@@ -1,9 +1,9 @@
 Timings for different parts of the algorithm:
 
-0% Covariance proposals initialise
+2% Covariance proposals initialise
 0% Covariance proposals
-8% Transition rate proposals
-5% Trans parameter initialise
+6% Transition rate proposals
+2% Trans parameter initialise
 3% Trans param proposals
 0% Group effect initialise
 0% Group effect proposals
@@ -11,15 +11,15 @@ Timings for different parts of the algorithm:
 0% Fixed effects proposals
 0% SNP effects proposals
 0% sensitivty and specificity proposals
-0% Susceptible ind effect initialise
-0% Susceptible ind effect proposals
+8% Susceptible ind effect initialise
+35% Susceptible ind effect proposals
 0% Infectivity ind effect initialise
 0% Infectivity ind effect proposals
 0% Trans ind effect proposals
-43% Events proposals
-16% Events proposals likelihood
-14% Add/remove proposals
-7% Add/remove likelihood
+0% Events proposals
+0% Events proposals likelihood
+0% Add/remove proposals
+0% Add/remove likelihood
 0% Infection sampler update
-22% Checking
+39% Checking
 

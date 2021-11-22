@@ -37,7 +37,7 @@ void Model::propose_susceptibility_ind_effects(vector <IndValue> &ind_value, con
     for(auto j = 0u; j < nie; j++){
       set_precalc_ind_eff(i,prec_ind_eff[j],ind_eff[j],ind_value,inv_cov_matrix);
     }
-      
+     
     auto sus_fac = log(ind.susceptibility);
     for(auto loop = 0; loop < ind_effect_sus_prop; loop++){
       for(auto j = 0u; j < nie; j++){
@@ -62,6 +62,7 @@ void Model::propose_susceptibility_ind_effects(vector <IndValue> &ind_value, con
           
           auto cv = ind_effect[ie].covar_ref;
           L_ind_effect[cv] += Li_change_ind_eff(ind_eff_store,ind_eff_prop,prec_ie);
+					
           if(g != UNSET) L_inf_events[g] += dL_inf_ev;
         }
         else{
@@ -196,8 +197,8 @@ void Model::propose_trans_ind_effects(vector <IndValue> &ind_value, const vector
   timer[TIME_TRANS_IND_EFFECT].start();
   auto inv_cov_matrix = calculate_inv_cov_matrix(param_value);
   
-	// This changes individual effect for a given transition
-	
+	// This changes individual effect for a given transition				
+					
   for(auto tr = 1u; tr < ntrans; tr++){
     const auto &tra = trans[tr];
     const auto &ind_eff = tra.ind_effect;
@@ -251,6 +252,7 @@ void Model::propose_trans_ind_effects(vector <IndValue> &ind_value, const vector
               
               auto cv = ind_effect[ie].covar_ref;
               L_ind_effect[cv] += Li_change_ind_eff(ind_eff_store,ind_eff_prop,prec_ie);
+						
               if(ind.infected == true){
                 L_trans_events += L_prop-L;
                 L = L_prop;

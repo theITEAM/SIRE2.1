@@ -92,7 +92,7 @@ void MCMC::update()
   model.propose_trans_ind_effects(ind_value,param_value,L_ind_effect,L_trans_events,ind_effect_jump);
 
 	model.propose_Se_Sp(ind_value,param_value,L_diag_test,prior,param_jump,burnin); 
-	
+
   check_chain();
 }
 

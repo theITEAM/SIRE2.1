@@ -99,6 +99,7 @@ void Model::add_matrix(XMLNode *child)
 				}
 			}	
 		}
+		
 		mat.A = invert_matrix(Ainv);
 	}
 	else{
@@ -128,6 +129,15 @@ void Model::add_matrix(XMLNode *child)
 				mat.A[j][i] = val;
 			}
 		}
+		
+		for(auto j = 0u; j < N; j++){
+			for(auto i = 0u; i < N; i++){
+				if(mat.A[j][i] != mat.A[i][j]){
+					emsg("The matrix '"+mat.name+"' specified by the '"+tab_name(child)+"' tag must be symmetric");
+				}
+			}
+		}
+		
 		Ainv = invert_matrix(mat.A);
 	}
 	

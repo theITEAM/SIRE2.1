@@ -58,19 +58,19 @@ void MCMC::check_chain()
   if(different(prior,prior_check) == true) emsg("prior problem");
   prior = prior_check;
 
-  /// Checks the individual effect likelihoods are correctly set
-  auto L_ind_effect_check = model.calculate_L_ind_effect(ind_value,param_value);
-  for(auto c = 0; c < model.ncovariance; c++){
-    if(different(L_ind_effect[c],L_ind_effect_check[c]) == true) emsg("L_ind_effect problem");
-  }
-  L_ind_effect = L_ind_effect_check;
-  
   // Checks the infection event likelihoods are correctly set
   auto L_inf_events_check = model.calculate_L_inf_events(ind_value,param_value);
   for(auto g = 0; g < model.ngroup; g++){
     if(different(L_inf_events[g],L_inf_events_check[g]) == true) emsg("L_inf_events problem");
   }
   L_inf_events = L_inf_events_check;
+  
+	 /// Checks the individual effect likelihoods are correctly set
+  auto L_ind_effect_check = model.calculate_L_ind_effect(ind_value,param_value);
+  for(auto c = 0; c < model.ncovariance; c++){
+    if(different(L_ind_effect[c],L_ind_effect_check[c]) == true) emsg("L_ind_effect problem");
+  }
+  L_ind_effect = L_ind_effect_check;
   
   // Checks the transtion event likelihood is correctly set
   auto L_trans_events_check = model.calculate_L_trans_events(ind_value,param_value);

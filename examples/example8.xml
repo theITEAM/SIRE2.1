@@ -1,12 +1,15 @@
 <?xml version='2.0' encoding='UTF-8' ?>
 
 <SIRE version='2.0'>
-<mcmc output_dir='Output' nsample='10000' burnin='2500' thin='10'/>
+<!--<mcmc output_dir='Output' nsample='10000' burnin='2500' thin='10'/>-->
+<pas output_dir='Output' nsample_per_gen='1000' phi_final = '1.0' nsample='100000' burnin='25000' thin='10'/>
 
 <!-- This defines the different comparments in the model -->
 <comp name='S'/>
-<comp name='I' infectivity='1' individual_effect='f_a,f_e' />
+<comp name='I' relative_infectivity='1' />
 <comp name='R'/>
+
+<infectivity individual_effect='f_a,f_e' />
 
 <!-- This defines the different transition in the model -->
 <trans from='S' to='I' type='infection' beta='beta' inf_model='density dependent' data_column='4' individual_effect='g_a,g_e' />
@@ -56,19 +59,19 @@ sigma_cor_gr	sigma_cor_fr	1
 <prior parameter='m' type='Flat' val1='0' val2='10'/>
 <prior parameter='k' type='Flat' val1='1' val2='5'/>
 
-<prior parameter='omega_gg' type='Flat' val1='0.01' val2='2'/>
-<prior parameter='omega_ff' type='Flat' val1='0.01' val2='2'/>
-<prior parameter='omega_rr' type='Flat' val1='0.01' val2='2'/>
-<prior parameter='omega_cor_gf' type='Flat' val1='-0.5' val2='0.5'/>
-<prior parameter='omega_cor_gr' type='Flat' val1='-0.5' val2='0.5'/>
-<prior parameter='omega_cor_fr' type='Flat' val1='-0.5' val2='0.5'/>
+<prior parameter='omega_gg' type='Flat' val1='0.05' val2='2'/>
+<prior parameter='omega_ff' type='Flat' val1='0.05' val2='2'/>
+<prior parameter='omega_rr' type='Flat' val1='0.05' val2='2'/>
+<prior parameter='omega_cor_gf' type='Flat' val1='-0.9' val2='0.9'/>
+<prior parameter='omega_cor_gr' type='Flat' val1='-0.9' val2='0.9'/>
+<prior parameter='omega_cor_fr' type='Flat' val1='-0.9' val2='0.9'/>
 
-<prior parameter='sigma_gg' type='Flat' val1='0.01' val2='2'/>
-<prior parameter='sigma_ff' type='Flat' val1='0.01' val2='2'/>
-<prior parameter='sigma_rr' type='Flat' val1='0.01' val2='2'/>
-<prior parameter='sigma_cor_gf' type='Flat' val1='-0.5' val2='0.5'/>
-<prior parameter='sigma_cor_gr' type='Flat' val1='-0.5' val2='0.5'/>
-<prior parameter='sigma_cor_fr' type='Flat' val1='-0.5' val2='0.5'/>
+<prior parameter='sigma_gg' type='Flat' val1='0.05' val2='2'/>
+<prior parameter='sigma_ff' type='Flat' val1='0.05' val2='2'/>
+<prior parameter='sigma_rr' type='Flat' val1='0.05' val2='2'/>
+<prior parameter='sigma_cor_gf' type='Flat' val1='-0.9' val2='0.9'/>
+<prior parameter='sigma_cor_gr' type='Flat' val1='-0.9' val2='0.9'/>
+<prior parameter='sigma_cor_fr' type='Flat' val1='-0.9' val2='0.9'/>
 
 <!-- 'Datatable' provides information about individuals -->
 <!-- 'id' denote the column which gives the unique ids for individuals -->

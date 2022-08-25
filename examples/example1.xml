@@ -1,11 +1,12 @@
 <?xml version='1.0' encoding='UTF-8' ?>
 
 <SIRE version='2.0'>
-<mcmc output_dir='Output' nsample='10000' burnin='2500' thin='10'/>
+<!--<mcmc output_dir='Output' nsample='10000' burnin='2500' thin='10'/>-->
+<pas output_dir='Output' nsample_per_gen='100' phi_final = '1.0' nsample='1000' burnin='250' thin='1'/>
 
 <!-- This defines the different comparments in the model -->
 <comp name='S'/>
-<comp name='I' infectivity='1'/>
+<comp name='I' relative_infectivity='1'/>
 
 <!-- This defines the different transition in the model -->
 <trans from='S' to='I' type='infection' beta='beta' inf_model='density dependent' data_column='4' />

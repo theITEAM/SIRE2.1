@@ -14,6 +14,8 @@ Version 2.1 allow for the specification of different types of sequential compart
 
 The software is compiled using "make".
 
-The code is run using: "./sire examples/example1.xml 0"
+MPI is loaded using "module load mpi/openmpi-x86_64"
 
-Here the number 0 sets the seed and can be changed.
+The code is run using: "mpirun -n 20 ./sire examples/example1.xml 0"
+
+Here -n 20 set the number of cores (and MCMC chains) which are run on and the number 0 sets the random seed (whcih can be changed).

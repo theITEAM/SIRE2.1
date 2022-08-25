@@ -18,4 +18,4 @@ MPI is loaded using "module load mpi/openmpi-x86_64"
 
 The code is run using: "mpirun -n 20 ./sire examples/example1.xml 0"
 
-Here -n 20 set the number of cores (and MCMC chains) which are run on and the number 0 sets the random seed (whcih can be changed).
+Here -n 20 sets the number of cores (and MCMC chains) which are run on and the number 0 sets the random seed (which can be changed).

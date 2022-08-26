@@ -123,8 +123,7 @@ void MCMC::update()
 
 	if(check_all == true) check_chain(7);
 	
-	//model.propose_mean_event_times(ind_value, param_value, L_inf_events, L_trans_events, L_diag_test, prior, mean_time_jump, burnin, quench);
-	//check_chain();
+	model.propose_mean_event_times(ind_value, param_value, L_inf_events, L_trans_events, L_diag_test, prior, mean_time_jump, burnin, quench);
 	
 	if(check_all == true) check_chain(8);
 	
@@ -430,7 +429,6 @@ void MCMC::output_combined_trace(const vector < vector <Sample> > &sample) const
 			s++;
 		}
 	}
-	cout << "done\n";
 }
 
 

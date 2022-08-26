@@ -73,12 +73,12 @@ void Model::propose_mean_event_times(vector <IndValue> &ind_value, vector <doubl
 			
 					auto L_trans_events_prop = calculate_L_trans_events(ind_value_prop, param_prop);
 					sum += L_trans_events_prop - L_trans_events;
-			
-					//auto val = quench.phi_L*sum + quench.phi_Pr*(prior_prop-prior);
-					//if(val > 10) val = 10;
-					//auto al = exp(val);
-				
-					auto al = exp(quench.phi_L*sum + quench.phi_Pr*(prior_prop-prior) + num*log(fac));
+
+					auto L_diag_test_prop = calculate_L_diag_test(ind_value_prop, param_prop);
+					auto dL_DT = 0.0;
+					for (auto g = 0; g < ngroup; g++) dL_DT += L_diag_test_prop[g] - L_diag_test[g];
+	
+					auto al = exp(quench.phi_L*sum  + quench.phi_DT*dL_DT + quench.phi_Pr*(prior_prop-prior) + num*log(fac));
 
 					if (MH_proposal(al,12)) {
 						jump.nac++;
@@ -88,6 +88,7 @@ void Model::propose_mean_event_times(vector <IndValue> &ind_value, vector <doubl
 
 						L_inf_events = L_inf_events_prop;
 						L_trans_events = L_trans_events_prop;
+						L_diag_test = L_diag_test_prop;
 						prior = prior_prop;
 						
 						if (burnin == true) jump.size *= prop_up;

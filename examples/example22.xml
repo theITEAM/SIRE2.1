@@ -2,7 +2,7 @@
 <SIRE version="2.1">
 
 <!--MCMC options-->
-<pas output_dir="Output" nsample_per_gen="100" phi_final = "1.0" nsample="10000" burnin="2500" thin="10"/>
+<pas output_dir="Output" nsample_per_gen="1000" phi_final = "0.95" nsample="50000" burnin="2500" thin="10"/>
 
 <!--Model compartments-->
 <comp name="S"/>

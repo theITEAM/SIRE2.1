@@ -26,13 +26,11 @@
 // Load mpi: module load mpi/openmpi-x86_64
 
 // Compile using:    make
-// Run using: ./sire examples/example1.xml 0
-// Run using: mpirun -n 20 ./sire examples/example103b.xml 0
-// Run using: ./sire examples/example7b.xml 0
-// Simulate using: ./sire examples/example19.xml 0 0
-// mpirun -n 20 ./sire examples/example13.xml 0
-// mpirun -n 10 ./sire data/slow_mixing.xml 0
-// Note, 0 is the random seed used to generate MCMC. This can be changed to any other integer.
+
+// Run using: mpirun -n 20 ./sire examples/example1.xml 0
+// Note, -n denotes the number of cores (and chains) and 0 is the random seed used to generate MCMC. This can be changed to any other integer.
+
+// Simulate using: ./sire examples/example1.xml 0 0
 
 #include <iostream>
 #include <sstream>

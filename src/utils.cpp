@@ -207,7 +207,7 @@ void check_same(const vector <double> &vec1, const vector <double> &vec2)
 bool MH_proposal(double al, unsigned int num)
 {
 	if(std::isnan(al)) emsg("Metropolis-Hastings problem nan  "+to_string(num));
-	if(std::isinf(al)) emsg("Metropolis-Hastings problem inf "+to_string(num));
+	//if(std::isinf(al)) emsg("Metropolis-Hastings problem inf "+to_string(num));
 	//if(al == 0) emsg("Metropolis-Hastings problem zero "+to_string(num));
 
 	if(ran() < al) return true;

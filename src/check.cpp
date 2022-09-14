@@ -19,6 +19,8 @@ void MCMC::check_chain(unsigned int num) {
 	// cout << "MCMC::check_chain()" << endl; // DEBUG
 	timer[TIME_CHECK].start();
 
+	if(model.cloglog.on == true){ cloglog_check(num); return;}
+		
 	// Checks that individual quantities are correctly set
 	if (model.nind_effect > 0) {
 		auto ind_value_check = ind_value;
@@ -76,6 +78,7 @@ void MCMC::check_chain(unsigned int num) {
 	}
 	L_ind_effect = L_ind_effect_check;
 
+	
 	// Checks the infection event likelihoods are correctly set
 	auto L_inf_events_check = model.calculate_L_inf_events(ind_value, param_value);
 	for (auto g = 0; g < model.ngroup; g++) {
@@ -130,7 +133,7 @@ void MCMC::check_chain(unsigned int num) {
 			}
 		}
 	}
-
+	
 	// Check for not a number
 	if (std::isnan(prior) || std::isinf(prior))
 		emsg("Prior is not a number");

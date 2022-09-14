@@ -67,7 +67,7 @@ void Model::propose_trans_params(vector <IndValue> &ind_value, vector <double> &
 				if (prior_change == ZERO_PRIOR) al = 0;
 
 				jump.ntr++;
-				if (MH_proposal(al,16)) {
+				if (MH_proposal(al,36)) {
 					jump.nac++;
 					L_trans_events = L_propose;
 					prior += prior_change;

@@ -41,6 +41,7 @@ void Model::load_input_file(string file) {
 	if (str.size() == 0)
 		emsg("No input file");
 
+
 	remove_comments(str);
 
 	char *xml = new char[str.size() + 1];
@@ -62,11 +63,29 @@ void Model::load_input_file(string file) {
 	}
 	nparam = param.size();
 
+	// Adds derived
+	for (auto child : child_list) {
+		if (tab_name(child) == "derived") add_derived(child);
+	}
+	nderived = derived.size();
+	
+	if(false){
+		for(auto der : derived){
+			cout << der.name << ": ";
+			for(auto th : der.numerator_param) cout << param[th].name << " ";
+			cout << " / ";
+			for(auto th : der.denominator_param) cout << param[th].name << " ";
+			cout << endl;
+		}
+	}
+	
 	dt = 0.5;
 	output_samples = 1000;
 	
 	algorithm = ALG_UNSET;
 	
+	cloglog.on = false;
+		
 	// Gets basic properties of the MCMC chain
 	for (auto child : child_list) {
 		auto val = tab_name(child);
@@ -74,7 +93,7 @@ void Model::load_input_file(string file) {
 			if(algorithm != ALG_UNSET) emsg("Cannot set algorithm type twice.");
 			algorithm = ALG_MCMC;
 			
-			output_dir = get(child, "output_dir");
+			output_dir = get(child, "output_dir"); output_dir = "ALG4_INF_"+output_dir;
 			nsample = get_int(child, "nsample");
 			nburnin = get_int(child, "burnin");
 			
@@ -116,7 +135,17 @@ void Model::load_input_file(string file) {
 			nthin = 1;
 			if (exist(child, "thin")) nthin = get_int(child, "thin");
 		}
-	
+
+		if(val == "mcmc" || val == "pas") {
+			if(exist(child, "cloglog")){
+				auto val = get(child, "cloglog");
+				if(val == "on"){	
+					cloglog.on = true;
+					cloglog.DeltaT = get_num(child, "deltaT");
+				}
+			}
+		}
+		
 		if (val == "map") {
 			if(algorithm != ALG_UNSET) emsg("Cannot set algorithm type twice.");
 			algorithm = ALG_MAP;
@@ -234,6 +263,9 @@ void Model::load_input_file(string file) {
 			add_pred_acc(child);
 	}
 
+	// This artificially sets time ranges for testing against cloglog
+	//set_time_ranges();   /* SHOULD BE COMMENTED OUT */                              
+	
 	// Initialise proposals on event times
 	ev_change_initialise();
 
@@ -243,6 +275,8 @@ void Model::load_input_file(string file) {
 	// Intialises proposals
 	propose_mean_event_times_initialise();
 	propose_joint_ie_var_initialise();
+
+	if(cloglog.on == true) initialise_cloglog();          // Initialises cloglog likelihood
 
 	// Checks the model is correctly specified
 	check_model();
@@ -484,6 +518,65 @@ void Model::add_parameter(XMLNode *child) {
 		else emsg("Cannot find prior type '" + type + "'");
 	}
 	param.push_back(par);
+}
+
+
+/// Gets a list of sumed parameters from a string
+vector <unsigned int> Model::get_param_sum(string st) const
+{
+	if(st.substr(0,1) == "(") st = st.substr(1,st.length()-1);
+	if(st.substr(st.length()-1,1) == ")") st = st.substr(0,st.length()-1);
+	
+	auto spl = split(st,'+');
+	
+	vector <unsigned int> list;
+
+	for(auto val : spl){
+		auto th = 0; while(th < param.size() && param[th].name != val) th++;
+		if(th == param.size()) emsg("In derived expression cannot find '"+val+"'");
+		
+		list.push_back(th);
+	}
+
+	return list;
+}
+
+
+/// Add parameter to the model
+void Model::add_derived(XMLNode *child) 
+{
+	// cout << "Model::add_parameter()" << endl; // DEBUG
+	if (!exist(child, "name")) emsg("Derived tag must have a name");
+	if (!exist(child, "expression")) emsg("Derived tag must have an expression");
+	
+	Derived der;
+	der.name = get(child, "name");
+	
+	auto exp = get(child, "expression");
+	
+	auto spl = split(exp,'/');
+	if(spl.size() > 2) emsg("The expression for '"+der.name+"' cannot contain more than one /");
+	
+	der.numerator_param = get_param_sum(spl[0]);
+	if(spl.size() == 2) der.denominator_param = get_param_sum(spl[1]);
+	
+	derived.push_back(der);
+}
+
+
+/// Calculates a derived quantity
+double Model::calculate_derived(const Derived &der, const vector <double> &param_value) const
+{
+	auto numerator = 0.0;
+	for(auto th : der.numerator_param) numerator += param_value[th];
+	
+	auto denominator= 0.0;
+	if(der.denominator_param.size() == 0) denominator = 1;
+	else{
+		for(auto th : der.denominator_param) denominator += param_value[th];
+	}
+	
+	return numerator/denominator;
 }
 
 

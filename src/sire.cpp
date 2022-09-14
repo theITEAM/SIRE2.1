@@ -32,6 +32,7 @@
 
 // Simulate using: ./sire examples/example1.xml 0 0
 
+
 #include <iostream>
 #include <sstream>
 #include <math.h>
@@ -140,7 +141,7 @@ int main(int argc, char *argv[])
 					if (mcmc.burnin == false)                 // Updates posterior average of individual effects (to calcualte PA later)
 						mcmc.ind_effect_posterior_mean_update();
 					
-					if(s == model.nburnin) mcmc.optimum_quench_schedule();
+					//if(s == model.nburnin) mcmc.optimum_quench_schedule();
 				}
 			
 				auto dir = model.output_dir;

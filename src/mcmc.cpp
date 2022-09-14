@@ -52,14 +52,16 @@ MCMC::MCMC(const Model &model) : model(model)
 
 	initialise_proposals();                                           // Initialises MCMC proposals
 
-	phi = 0; phi_run = 1;                                                      // Initial quench temperature set to zero
+	phi = 0; phi_run = 1;                                             // Initial quench temperature set to zero
 	
-	load_phi_schedule();
+	//load_phi_schedule();
 }
 
 
 /// Sets all the likelihoods at the start of the chain
 void MCMC::set_likelihoods() {
+	if(model.cloglog.on == true){ set_likelihoods_cloglog(); return;}
+	
 	// cout << "MCMC::set_likelihoods()" << endl; // DEBUG
 	L_ind_effect = model.calculate_L_ind_effect(ind_value, param_value); // Sets likelihoods for individual effects
 
@@ -86,6 +88,8 @@ void MCMC::diff(unsigned int num)
 /// Performs a series of MCMC proposal which consist of an "update"
 void MCMC::update() 
 {
+	if(model.cloglog.on == true){ update_cloglog(); return;}
+	
 	auto check_all = false;
 	// cout << "MCMC::update()" << endl; // DEBUG
 
@@ -207,6 +211,7 @@ void MCMC::set_quench(unsigned int s)
 		}
 		*/
 	}
+	else phi = 1;
 
 	quench.phi_L = phi*phi_run;
 	quench.phi_DT = phi*phi_run;
@@ -352,8 +357,8 @@ void MCMC::trace_initialise(const string file) {
 	// cout << "MCMC::trace_initialise()" << endl; // DEBUG
 	trace.open(model.output_dir + "/" + file);
 	trace << "state";
-	for (auto par : model.param)
-		trace << '\t' << par.name;
+	for (auto par : model.param) trace << '\t' << par.name;
+	for (auto der : model.derived) trace << '\t' << der.name;
 	for (auto c = 0; c < model.ncovariance; c++)
 		trace << "\tL_ind_effect " << c;
 	trace << "\tL_inf_events"
@@ -368,11 +373,16 @@ void MCMC::trace_initialise(const string file) {
 
 
 /// Outputs the trace plot
-void MCMC::trace_output(const int s) {
+void MCMC::trace_output(const int s) 
+{
 	// cout << "MCMC::trace_output()" << endl; // DEBUG
+	
+	if(model.cloglog.on == true){ cloglog_trace_output(s); return;}
+	
 	trace << s;
-	for (auto val : param_value)
-		trace << '\t' << val;
+	for (auto val : param_value) trace << '\t' << val;
+	
+	for (auto der : model.derived) trace << '\t' << model.calculate_derived(der,param_value);
 	
 	auto PP = 0.0;
 	for (auto c = 0; c < model.ncovariance; c++){
@@ -647,6 +657,24 @@ void MCMC::output_statistics()
 			}	
 			post_csv << endl;
 		}
+		
+		for (auto k = 0; k < model.nderived; k++) {
+			const auto &der = model.derived[k];
+			
+			vector <double> vec;
+			for(auto ch = 0; ch < chain_sample.size(); ch++){
+				for (const auto &samp : chain_sample[ch]) vec.push_back(model.calculate_derived(der,samp.param_value));
+			}
+			
+			auto stat = get_statistic(vec);
+
+			post_csv << der.name << ", " << stat.mean << ", " << stat.CImin << ", "  << stat.CImax << ", ";
+			post_csv << stat.ESS << ", ";
+			
+			post_csv << "---";
+			post_csv << endl;
+		}
+			
 		post_csv.close();
 	}
 	
@@ -828,9 +856,11 @@ void MCMC::store_sample() {
 void MCMC::store_burnin_Li() 
 {
 	auto sum = 0.0;
-	for (auto g = 0; g < model.ngroup; g++) sum += L_inf_events[g];
-	sum += L_trans_events;
-
+	if(model.cloglog.on == false){
+		for (auto g = 0; g < model.ngroup; g++) sum += L_inf_events[g];
+		sum += L_trans_events;
+	}
+	
 	burnin_Li.push_back(sum);
 	burnin_phi.push_back(phi);
 }
@@ -927,6 +957,9 @@ void MCMC::initialise_proposals() {
 /// Initialises samplers used to sample infection time (this is used to add and removed infected individuals)
 void MCMC::initialise_inf_sampler(int s) {
 	// cout << "MCMC::initialise_inf_sampler()" << endl; // DEBUG
+	
+	if(model.cloglog.on == true) return;
+	
 	timer[TIME_INF_SAMP_UPDATE].start();
 	for (auto &ind : ind_value) {
 		auto &inf_samp = ind.inf_sampler;

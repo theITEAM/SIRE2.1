@@ -55,7 +55,9 @@ void Model::propose_susceptibility_ind_effects(vector <IndValue> &ind_value, con
 
 				auto dL_inf_ev = Li_change_sus(sus_fac_store, sus_fac, prec);
 				
-				auto al = exp(quench.phi_L*dL_inf_ev);
+				auto inside = quench.phi_L*dL_inf_ev; if(inside > 100) inside = 100;
+				
+				auto al = exp(inside);
 	
 				if (false) { // Checks for correct sampling from individual effect distribution
 					auto probfi = normal_probability(ind_eff_store,mean,sd);
@@ -64,7 +66,7 @@ void Model::propose_susceptibility_ind_effects(vector <IndValue> &ind_value, con
 				}
 					
 				if(indiv.group == UNSET) check_one(al,1);
-	
+
 				ind_effect_jump[ie].ntr++;
 				if (MH_proposal(al,5)) {
 					ind_effect_jump[ie].nac++;
@@ -464,10 +466,13 @@ void Model::propose_infectivity_ind_effects(vector <IndValue> &ind_value, const 
 					//infectivity_change = inf_av * (exp(inf_fac) - exp(inf_fac_store));
 					infectivity_change = exp(inf_fac) - exp(inf_fac_store);
 					dL_inf_ev = Li_change_inf(infectivity_change, prec, I_profile[g]);
-				} else
-					dL_inf_ev = 0;
+				} 
+				else dL_inf_ev = 0;
 
-				auto al = exp(quench.phi_L*dL_inf_ev);
+				auto inside = quench.phi_L*dL_inf_ev; if(inside > 100) inside = 100;
+				
+				auto al = exp(inside);
+
 
 				if(indiv.group == UNSET) check_one(al,1);
 

@@ -88,4 +88,4 @@ enum Timers { TIME_TOTAL,
             };
 
 #include "struct.hpp"
-
+#include <vector>

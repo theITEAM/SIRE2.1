@@ -25,6 +25,40 @@ void Simulate::run()
 {
 	param_value = model.prior_sample();
 
+	set_value("beta", 0.05);
+	set_value("m", 7);
+
+	/*
+	auto pheno_var = 1;
+	auto h2 = 0.0001;
+	set_value("omega_gg", h2*pheno_var);
+	set_value("sigma_gg", (1-h2)*pheno_var);
+	*/
+	
+	//set_value("omega_gg", 1.5);
+	//set_value("omega_ff", 1.5);
+	auto pheno_var_f = 3;
+	auto h2 = 0.999;
+	set_value("omega_ff", h2*pheno_var_f);
+	set_value("sigma_ff", (1-h2)*pheno_var_f);
+	
+	/*
+	auto pheno_var_g = 1;
+	auto pheno_var_f = 3;
+	auto h2 = 0.9999;
+	
+	set_value("omega_gg", h2*pheno_var_g);
+	set_value("sigma_gg", (1-h2)*pheno_var_g);
+		
+	set_value("omega_ff", h2*pheno_var_f);
+	set_value("sigma_ff", (1-h2)*pheno_var_f);
+	
+	set_value("omega_cor_gf", 0);
+	set_value("sigma_cor_gf", 0);
+		*/
+		
+	
+	
 
 	//set_value("beta", 0.05);
 	//set_value("m", 7);
@@ -109,6 +143,7 @@ void Simulate::run()
 
 
 	// Used for E24
+	/*
 set_value("beta", 0.2);
 	 set_value("latent_period",3);
 	    set_value("detection_period",4);
@@ -132,6 +167,7 @@ set_value("beta", 0.2);
 	    set_value("sigma_cor_gf",0.2);
 	    set_value("sigma_cor_gr",-0.1);
 	    set_value("sigma_cor_fr",-0.4);
+*/
 
 /*
 	// Used for E23

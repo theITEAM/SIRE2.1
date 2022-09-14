@@ -322,31 +322,39 @@ void Model::propose_transmission_rate(const vector <IndValue> &ind_value, vector
 		auto beta_prop = beta + normal_sample(0, jump.size);
 		param_value[th] = beta_prop;
 
-		// Calculates the Metropolis-Hastings acceptance probability
-		auto prior_change = calculate_prior_change(th, beta, param_value);
-		
-		auto dL = 0.0;
-		vector <double> L_inf_events_prop(ngroup,0);
-		for (auto g = 0; g < ngroup; g++) {
-			auto &prec = precalc[g];
-			L_inf_events_prop[g] = prec.con_fac + prec.log_beta_num * log(beta_prop) + prec.beta_fac * beta_prop;
-			dL += L_inf_events_prop[g] - L_inf_events[g];
-		}
-		
-		auto al = exp(quench.phi_L*dL + quench.phi_Pr*prior_change);
-		if (prior_change == ZERO_PRIOR) al = 0;
-		
-		jump.ntr++;
-		if (MH_proposal(al,16)) {
-			jump.nac++;
-			L_inf_events = L_inf_events_prop;
-			
-			prior += prior_change;
-			if (burnin == true) jump.size *= prop_up;
-		}
-		else {
+		if(inbounds(param_value) == false){
 			param_value[th] = beta;
-			if (burnin == true) jump.size *= prop_down;
+		}
+		else{			
+			// Calculates the Metropolis-Hastings acceptance probability
+			auto prior_change = calculate_prior_change(th, beta, param_value);
+			
+			auto dL = 0.0;
+			vector <double> L_inf_events_prop(ngroup,0);
+			for (auto g = 0; g < ngroup; g++) {
+				auto &prec = precalc[g];
+				L_inf_events_prop[g] = prec.con_fac + prec.log_beta_num * log(beta_prop) + prec.beta_fac * beta_prop;
+				dL += L_inf_events_prop[g] - L_inf_events[g];
+			}
+		
+			auto inside = quench.phi_L*dL + quench.phi_Pr*prior_change;
+			if(inside > 100.0) inside = 100;
+				
+			auto al = exp(inside);
+			if (prior_change == ZERO_PRIOR) al = 0;
+
+			jump.ntr++;
+			if (MH_proposal(al,46)) {
+				jump.nac++;
+				L_inf_events = L_inf_events_prop;
+				
+				prior += prior_change;
+				if (burnin == true) jump.size *= prop_up;
+			}
+			else {
+				param_value[th] = beta;
+				if (burnin == true) jump.size *= prop_down;
+			}
 		}
 	}
 	else{                                      // This proposal samples from a gamma distribution

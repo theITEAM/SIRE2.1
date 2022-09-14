@@ -14,6 +14,12 @@ struct Param {
 	double prior_val2;
 };
 
+struct Derived {
+	string name;
+	vector <unsigned int> numerator_param;
+	vector <unsigned int> denominator_param;
+};
+
 struct Comp {
 	string name;                    // The name of the compartment
 
@@ -110,11 +116,11 @@ struct InfSampler {
 };
 
 struct Individual {
-	string id;                      // The unique identified for an individual
-	bool inside_group;              // This is set to true if the individual is inside a group
-	int group;                      // The group to which the individual belongs
-	int initial_comp;               // The initial compartment for the individual
-	Status status;                  // Determines the infection status of the individual
+	string id;                                // The unique identified for an individual
+	bool inside_group;                        // This is set to true if the individual is inside a group
+	int group;                                // The group to which the individual belongs
+	int initial_comp;                         // The initial compartment for the individual
+	Status status;                            // Determines the infection status of the individual
 	vector <TimeRange> trans_time_range;      // This stores the potential time range for a given transition
 	vector <double> trans_obs_time;           // The observed time for a transition
 	vector <double> trans_time_initial;       // Set from 'data_column_initial'
@@ -390,4 +396,33 @@ struct IeVarJointProposal{
 	unsigned int covar;
 	unsigned int pos;
 };
+
+struct InfInd{
+	unsigned int i;       // The individual which is infected
+	double infectivity;       // The compartment that individual is in
+};
+
+struct CLogLogRef {
+	vector <unsigned int> direct;
+	vector <unsigned int> indirect;
+};
+
+struct L_CLogLog{
+	unsigned int i;
+	unsigned int tr;
+	bool result;               // Set to true if the individual makes the transition
+	double t;
+	
+	vector <InfInd> inf_ind;
+};
+
+struct CLogLog{
+	bool on;                             // Sets if the complimentary log-log link function is used for the likelihood
+	double DeltaT;                       // The timestep used for cloglog
+	
+	vector <L_CLogLog> L_list; 
+	
+	vector < vector <CLogLogRef> > L_ref;// Information about individuals
+};
+
 

@@ -20,6 +20,9 @@ public:
 	vector <Param> param;                  // The parameters in the model
 	int nparam;                            // The number of parameters
 
+	vector <Derived> derived;              // Quantities derived from paramaters
+	int nderived;
+
 	vector <Comp> comp;                    // The compartments in the model
 	int ncomp;                             // The number of compartments
 
@@ -70,6 +73,8 @@ public:
 	
 	bool set_ind_effect_initial;           // Determines if individual effects are set initially
 
+	CLogLog cloglog;                       // Stores information about cloglog
+	
 	int N;                                 // The number of individuals
 
 	double dt;                             // Timestep (used in emulation)
@@ -87,6 +92,7 @@ public:
 	// In model_initialise.cc
 public:
 	Model(string file);
+	double calculate_derived(const Derived &der, const vector <double> &param_value) const;
 
 private:
 	void load_input_file(string file);
@@ -94,6 +100,8 @@ private:
 	void set_infectivity(XMLNode *child);
 	void add_trans(XMLNode *child);
 	void add_parameter(XMLNode *child);
+	vector <unsigned int> get_param_sum(string st) const;
+	void add_derived(XMLNode *child);
 	void add_time_range(XMLNode *child);
 	void add_datatable(XMLNode *child);
 	void shift_fixed_effects();
@@ -240,5 +248,17 @@ public:
 	vector <unsigned int> get_trlist(unsigned int c) const;
 	double posterior_grad_H(vector <double> &grad, vector < vector <double> > &H, const vector <double> &param_value, vector <IndValue> &ind_value, const vector <GroupEvent> &gr_ev, const vector <unsigned int> &param_var_ref, const vector < vector <unsigned int> > &ind_effect_var_ref, unsigned int nvar, bool calc_grad, bool calc_H) const;
 	vector < vector <double> > construct_initial_Binv(const vector <double> &param_value, const vector <unsigned int> &param_var_ref, const vector < vector <unsigned int> > &ind_effect_var_ref, unsigned int nvar) const;
+
+	// In model_comp_log_log.cpp
+public:
+	void initialise_cloglog();
+	vector <double> calculate_L_cloglog(const vector <IndValue> &ind_value, const vector <double> &param) const;
+	double calculate_L_cloglog_ind(const vector <IndValue> &ind_value, const vector <double> &param, unsigned int m) const;
+	void cloglog_propose_transmission_rate(const vector <IndValue> &ind_value, vector <double> &param_value, vector <double> &L_cloglog, double &prior, vector <Jump> &param_jump, const bool burnin, const Quench &quench) const;
+	void cloglog_propose_trans_params(vector <IndValue> &ind_value, vector <double> &param_value, vector <double> &L_cloglog, double &prior, vector <Jump> &param_jump, const bool burnin, const Quench &quench) const;
+	void cloglog_propose_susceptibility_ind_effects(vector <IndValue> &ind_value, const vector <double> &param_value, vector <double> &L_ind_effect, vector <double> &L_cloglog, vector <Jump> &ind_effect_jump, const Quench &quench) const;
+	void cloglog_propose_infectivity_ind_effects(vector <IndValue> &ind_value, const vector <double> &param_value, vector <double> &L_ind_effect, vector <double> &L_cloglog, vector <Jump> &ind_effect_jump, const Quench &quench) const;
+	void cloglog_propose_joint_ie_var(vector <IndValue> &ind_value, vector <double> &param_value, vector <double> &L_ind_effect, vector <double> &L_cloglog, double &prior, vector <Jump> &pjie_jump, const bool burnin, const Quench &quench) const;
+	void set_time_ranges();
 };
 

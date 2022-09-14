@@ -35,6 +35,8 @@ public:
 
 	vector <double> L_diag_test;                   // The likelihood for disease diagnostic test
 
+	vector <double> L_cloglog;                     // The likelihood using a cloglog model
+
 	double prior;                                  // The prior probability
 
 	vector <IndPM> ind_effect_posterior_mean;      // Calculate posterior mean for individual effects
@@ -70,6 +72,10 @@ public:
 	void optimum_quench_schedule();
 	void check_chain(unsigned int num);           // In check.cc
 	Statistics get_statistic(const vector <double> &vec) const;
+	void update_cloglog();                        // In model_comp_log_log
+	void set_likelihoods_cloglog();               // In model_comp_log_log
+	void cloglog_check(unsigned int num); 
+	void cloglog_trace_output(const int s);
 
 private:
 	

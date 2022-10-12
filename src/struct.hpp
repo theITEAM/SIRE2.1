@@ -1,6 +1,7 @@
 /// This provides all the data structures used in the code
 
 #pragma once
+#include <vector>
 
 struct Param {
 	string name;                    // The name of the parameter
@@ -117,6 +118,7 @@ struct InfSampler {
 
 struct Individual {
 	string id;                                // The unique identified for an individual
+	string sire, dam;                         // Stores sire and dam information (if included)  
 	bool inside_group;                        // This is set to true if the individual is inside a group
 	int group;                                // The group to which the individual belongs
 	int initial_comp;                         // The initial compartment for the individual
@@ -419,6 +421,7 @@ struct L_CLogLog{
 struct CLogLog{
 	bool on;                             // Sets if the complimentary log-log link function is used for the likelihood
 	double DeltaT;                       // The timestep used for cloglog
+	bool geometric_approx;               // Determines if the geometric mean approx used
 	
 	vector <L_CLogLog> L_list; 
 	

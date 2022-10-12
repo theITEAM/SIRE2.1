@@ -1,4 +1,7 @@
 /Output
 /Analysis
+/cloglog
+/Fishboost
+/Test
 *.o
 *.d

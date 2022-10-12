@@ -97,7 +97,7 @@ double Model::calculate_L_cloglog_ind(const vector <IndValue> &ind_value, const 
 			{
 				r = beta*indv.susceptibility;
 		
-				if(1 == 0){
+				if(cloglog.geometric_approx == false){
 					auto sum = 0.0;
 					for(const auto &infi : ll.inf_ind){
 						sum += ind_value[infi.i].inf_single*infi.infectivity;
@@ -722,6 +722,14 @@ void MCMC::cloglog_check(unsigned int num)
 	timer[TIME_CHECK].stop();
 }
 
+void Model::check_relationship(string ind1, string ind2, const vector < vector <double> > A, double expected)
+{
+	auto i1 = 0; while(i1 < N && individual[i1].id != ind1) i1++;
+	auto i2 = 0; while(i2 < N && individual[i2].id != ind2) i2++;
+	
+	cout << A[i1][i2] << " " << A[i2][i1] << " should be " << expected << "\n";
+}
+
 
 /// Atificially sets time ranges to match with 
 void Model::set_time_ranges()
@@ -740,4 +748,3 @@ void Model::set_time_ranges()
 		}
 	}
 }
-

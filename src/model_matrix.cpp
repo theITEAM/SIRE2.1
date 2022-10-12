@@ -25,109 +25,79 @@ void Model::add_identity_matrix() {
 	mat.Ainvlist.resize(N);
 	mat.Ainvlist2.resize(N);
 	mat.Ainvdiag.resize(N);
-	for (auto i = 0; i < N; i++)
-		mat.Ainvdiag[i] = 1;
+	for (auto i = 0; i < N; i++) mat.Ainvdiag[i] = 1;
 
-	mat.A.resize(N);
-	for (auto j = 0; j < N; j++) {
-		mat.A[j].resize(N);
-		for (auto i = 0; i < N; i++) {
-			if (i == j)
-				mat.A[j][i] = 1;
-			else
-				mat.A[j][i] = 0;
+	if(need_to_sample == true){
+		mat.A.resize(N);
+		for (auto j = 0; j < N; j++) {
+			mat.A[j].resize(N);
+			for (auto i = 0; i < N; i++) {
+				if (i == j)
+					mat.A[j][i] = 1;
+				else
+					mat.A[j][i] = 0;
+			}
 		}
+
+		bool illegal;
+		mat.cholesky_matrix = calculate_cholesky_matrix(mat.A, illegal);
+		if (illegal == true)
+			emsg("Cannot calculate the cholesky matrix for '" + mat.name + "'");
 	}
-
-	bool illegal;
-	mat.cholesky_matrix = calculate_cholesky_matrix(mat.A, illegal);
-	if (illegal == true)
-		emsg("Cannot calculate the cholesky matrix for '" + mat.name + "'");
-
+	
 	matrix.push_back(mat);
 }
 
 
 /// Adds a relationship matrix to the model
-void Model::add_matrix(XMLNode *child) {
+void Model::add_matrix(XMLNode *child) 
+{
 	auto text = child->FirstChild()->Value();
 	auto tab = create_table(text);
 
 	Matrix mat;
 	mat.name = get(child, "name");
 
-	vector < vector <double> > Ainv;
-
+	mat.Ainvlist.resize(N);
+	mat.Ainvlist2.resize(N);
+	mat.Ainvdiag.resize(N);
+	
 	// Loads the matrix
 
 	if (tab_name(child) == "pedigree") {
-		Ainv.resize(N);
-		for (auto j = 0; j < N; j++) {
-			Ainv[j].resize(N);
-			for (auto i = 0; i < N; i++) {
-				if (i == j)
-					Ainv[j][i] = 1;
-				else
-					Ainv[j][i] = 0;
-			}
-		}
-
-		if (tab.ncol != 3)
+		if (tab.ncol != 3){
 			emsg("For 'pedigree' there should be three columns: first the individuals and then the two parents");
+		}
+		
 		for (auto r = 0; r < tab.nrow; r++) {
 			auto i = find_ind(tab.ele[r][0]);
-			auto par1 = find_ind(tab.ele[r][1]);
-			auto par2 = find_ind(tab.ele[r][2]);
+			if (i == UNSET) emsg("In 'pedigree' the indiviudal id must be set");
 
-			if (i == UNSET)
-				emsg("In 'pedigree' the indiviudal id must be set");
-
-			if (par1 == UNSET && par2 == UNSET) { // Both parents unknown
-			} else {
-				if (par1 == UNSET || par2 == UNSET) { // One parent known
-					auto p = par1;
-					if (par1 == UNSET)
-						p = par2;
-					Ainv[p][p] += 1.0 / 3;
-					Ainv[i][i] += 1.0 / 3;
-					Ainv[p][i] -= 2.0 / 3;
-					Ainv[i][p] -= 2.0 / 3;
-				} else {                           // Both parents known
-					Ainv[par1][par1] += 1.0 / 2;
-					Ainv[par2][par2] += 1.0 / 2;
-					Ainv[i][i] += 1.0;
-
-					Ainv[par1][par2] += 1.0 / 2;
-					Ainv[par2][par1] += 1.0 / 2;
-					Ainv[par1][i] -= 1.0;
-					Ainv[i][par1] -= 1.0;
-					Ainv[par2][i] -= 1.0;
-					Ainv[i][par2] -= 1.0;
-				}
-			}
+			individual[i].sire = tab.ele[r][1];
+			individual[i].dam = tab.ele[r][2];
 		}
 
-		mat.A = invert_matrix(Ainv);
-	} else {
-		mat.A.resize(N);
-		for (auto j = 0; j < N; j++)
-			mat.A[j].resize(N);
+		for(auto i = 0; i < N; i++){
+			if(individual[i].sire == "") emsg("Parents for all individuals not set");
+		}
+
+		set_Ainv_from_pedigree(mat);
+	} 
+	else{
+		vector < vector <double> > A;
+		A.resize(N);
+		for (auto j = 0; j < N; j++) A[j].resize(N,0);
 
 		if (tab_name(child) == "A") {
 			for (auto j = 0; j < N; j++) {
 				for (auto i = 0; i < N; i++)
-					mat.A[j][i] = number(tab.ele[j][i]);
+					A[j][i] = number(tab.ele[j][i]);
 			}
 		}
 
 		if (tab_name(child) == "A_nonzero") {
 			if(outp) cout << "Reading in A_nonzero...\n";
-			
-			for (auto j = 0; j < N; j++) {
-				for (auto i = 0; i < N; i++)
-					mat.A[j][i] = 0;
-			}
-
+		
 			if (tab.ncol != 3)
 				emsg("For 'A_nonzero' there should be three columns");
 
@@ -137,7 +107,7 @@ void Model::add_matrix(XMLNode *child) {
 				auto val = number(tab.ele[r][2]);
 				if (j < 0 || j >= N || i < 0 || i >= N)
 					emsg("Loading matrix problem");
-				mat.A[j][i] = val;
+				A[j][i] = val;
 			}
 		}
 
@@ -155,41 +125,148 @@ void Model::add_matrix(XMLNode *child) {
 
 		for (auto j = 0; j < N; j++) {
 			for (auto i = 0; i < N; i++) {
-				if (mat.A[j][i] != mat.A[i][j])
+				if (A[j][i] != A[i][j])
 					emsg("The matrix '" + mat.name + "' specified by the '" + tab_name(child) + "' tag must be symmetric");
 			}
 		}
 
-		Ainv = invert_matrix(mat.A);
+		auto Ainv = invert_matrix(A);  // Construct Ainv from A
+		
+		for (auto j = 0; j < N; j++) {
+			for (auto i = 0; i < N; i++) {
+				auto val = Ainv[j][i];
+				if (j != i) {
+					if (val != 0) {
+						Element ele;
+						ele.i = i;
+						ele.val = val;
+						mat.Ainvlist[j].push_back(ele);
+						if (i < j)
+							mat.Ainvlist2[j].push_back(ele);
+					}
+				} 
+				else mat.Ainvdiag[j] = val;
+			}
+		}
+		
+		if(need_to_sample == true){
+			mat.A = A;
+			
+			bool illegal;
+			mat.cholesky_matrix = calculate_cholesky_matrix(mat.A, illegal);
+			if (illegal == true){
+				emsg("Cannot calculate the cholesky matrix for '" + mat.name + "'");
+			}
+		}
 	}
+	
+	matrix.push_back(mat);
+}
 
-	// Generates non-zero elements of the inverse matrix
-
+/// Bases on sire and dam information, this constructs the inverse relationship matrix
+void Model::set_Ainv_from_pedigree(Matrix &mat)
+{	
 	mat.Ainvlist.resize(N);
 	mat.Ainvlist2.resize(N);
 	mat.Ainvdiag.resize(N);
-	for (auto j = 0; j < N; j++) {
-		for (auto i = 0; i < N; i++) {
-			auto val = Ainv[j][i];
-			if (j != i) {
-				if (val != 0) {
-					Element ele;
-					ele.i = i;
-					ele.val = val;
-					mat.Ainvlist[j].push_back(ele);
-					if (i < j)
-						mat.Ainvlist2[j].push_back(ele);
-				}
-			} else
-				mat.Ainvdiag[j] = val;
+	for(auto j = 0; j < N; j++) mat.Ainvdiag[j] = 0;
+	
+	for (auto i = 0; i < N; i++) add_Ainv_sparse(mat,i,i,1);
+	
+	for(auto i = 0; i < N; i++){
+		auto par1 = find_ind(individual[i].sire);
+		auto par2 = find_ind(individual[i].dam);
+		
+		if (par1 == UNSET && par2 == UNSET) { // Both parents unknown
+		} else {
+			if (par1 == UNSET || par2 == UNSET) { // One parent known
+				auto p = par1;
+				if (par1 == UNSET) p = par2;
+				
+				add_Ainv_sparse(mat,p,p,1.0/3);
+				add_Ainv_sparse(mat,i,i,1.0/3);
+				add_Ainv_sparse(mat,p,i,-2.0/3);
+				add_Ainv_sparse(mat,i,p,-2.0/3);
+			}
+			else {                           // Both parents known
+				add_Ainv_sparse(mat,par1,par1,1.0/2);
+				add_Ainv_sparse(mat,par2,par2,1.0/2);
+				add_Ainv_sparse(mat,i,i,1.0);
+				
+				add_Ainv_sparse(mat,par1,par2,1.0/2);
+				add_Ainv_sparse(mat,par2,par1,1.0/2);
+				add_Ainv_sparse(mat,par1,i,-1.0);
+				add_Ainv_sparse(mat,i,par1,-1.0);
+				add_Ainv_sparse(mat,par2,i,-1.0);
+				add_Ainv_sparse(mat,i,par2,-1.0);
+			}
 		}
 	}
+	
+	if(need_to_sample == true){
+		vector < vector <double> > Ainv;
+	
+		Ainv.resize(N);
+		for (auto j = 0; j < N; j++){
+			Ainv[j].resize(N,0);
+			
+			Ainv[j][j] = mat.Ainvdiag[j];
+			for(const auto &el : mat.Ainvlist[j]) Ainv[j][el.i] = el.val;
+		}
+		
+		mat.A = invert_matrix(Ainv);
+		/*
+		check_relationship("1","1",mat.A,1);
+		check_relationship("1","1001",mat.A,0);
+		check_relationship("1","3001",mat.A,0.5);
+		check_relationship("3001","3002",mat.A,0.5);
+		check_relationship("3001","3006",mat.A,0.25);
+		*/
+		
+		bool illegal;
+		mat.cholesky_matrix = calculate_cholesky_matrix(mat.A, illegal);
+		if (illegal == true){
+			emsg("Cannot calculate the cholesky matrix for '" + mat.name + "'");
+		}
+	}
+}
 
-	bool illegal;
-	mat.cholesky_matrix = calculate_cholesky_matrix(mat.A, illegal);
-	if (illegal == true)
-		emsg("Cannot calculate the cholesky matrix for '" + mat.name + "'");
+/// Adds a contribution to the sparse inverse relationship matrix 
+void Model::add_Ainv_sparse(Matrix &mat, const unsigned int j, const unsigned int i, double val)
+{
+	if(val == 0) return;
+	
+	if(j == i){ mat.Ainvdiag[i] += val; return;}
+	
+	auto k = 0; while(k < mat.Ainvlist[j].size() && mat.Ainvlist[j][k].i != i) k++;
+	if(k == mat.Ainvlist[j].size()){
+		Element ele;
+		ele.i = i;
+		ele.val = val;
+		mat.Ainvlist[j].push_back(ele);
+	}
+	else mat.Ainvlist[j][k].val += val;
+	
+	if(i < j){
+		auto k = 0; while(k < mat.Ainvlist2[j].size() && mat.Ainvlist2[j][k].i != i) k++;
+		if(k == mat.Ainvlist2[j].size()){
+			Element ele;
+			ele.i = i;
+			ele.val = val;
+			mat.Ainvlist2[j].push_back(ele);
+		}
+		else mat.Ainvlist2[j][k].val += val;
+	}
+}
 
+/// Contructs 
+void Model::construct_pedigree()
+{
+	cout << "Constructing relationship matrix..." << endl;
+	
+	Matrix mat;
+	mat.name = "A";
+	set_Ainv_from_pedigree(mat);
 	matrix.push_back(mat);
 }
 
@@ -477,16 +554,19 @@ vector <vector <double> > Model::invert_matrix_sparse(const vector <vector <doub
 
 /// Calculates a lower diagonal matrix used in Cholesky decomposition
 vector < vector <double> > Model::calculate_cholesky_matrix(const vector < vector <double> > &M, bool &illegal) const {
+	
+	return calculate_cholesky_matrix_sparse(M,illegal);
+	
 	auto nvar = M.size();
 
 	illegal = false;
 
 	vector <vector <double> > L;
 	L.resize(nvar);
-	for (auto i = 0; i < nvar; i++)
-		L[i].resize(nvar);
+	for (auto i = 0; i < nvar; i++) L[i].resize(nvar);
 
 	for (auto j = 0; j < nvar; j++) {
+		cout << j << " " << nvar << "j\n";
 		for (auto i = 0; i <= j; i++) {
 			auto sum = 0.0;
 			for (auto k = 0; k < i; k++)
@@ -499,11 +579,12 @@ vector < vector <double> > Model::calculate_cholesky_matrix(const vector < vecto
 					return L;
 				}
 				L[j][i] = sqrt(val);
-			} else
-				L[j][i] = (1.0 / L[i][i] * (M[j][i] - sum));
+			} 
+			else L[j][i] = (1.0 / L[i][i] * (M[j][i] - sum));
 		}
 	}
 
+cout << "echekc\n";
 	if (false) { // Check that M = L*LT
 		for (auto j = 0; j < nvar; j++) {
 			for (auto i = 0; i < nvar; i++) {
@@ -511,6 +592,64 @@ vector < vector <double> > Model::calculate_cholesky_matrix(const vector < vecto
 				for (auto ii = 0; ii < nvar; ii++)
 					sum += L[j][ii] * L[i][ii];
 
+				if (M[j][i] < sum - TINY || M[j][i] > sum + TINY)
+					emsg("Inverse Problem");
+			}
+		}
+	}
+
+print_matrix("L",L);
+	return L;
+}
+
+/// Calculates a lower diagonal matrix used in Cholesky decomposition
+vector < vector <double> > Model::calculate_cholesky_matrix_sparse(const vector < vector <double> > &M, bool &illegal) const {
+	auto nvar = M.size();
+
+	illegal = false;
+
+	vector <vector <double> > L;
+	L.resize(nvar);
+	for (auto i = 0; i < nvar; i++) L[i].resize(nvar);
+
+	vector <vector <unsigned int> > L_not_zero;
+	L_not_zero.resize(nvar);
+
+	for (auto j = 0; j < nvar; j++) {
+		for (auto i = 0; i <= j; i++) {
+			auto sum = 0.0;
+			for(auto k : L_not_zero[j]) sum += L[j][k] * L[i][k];
+		
+			if (j == i) {
+				auto val = M[j][j] - sum;
+				if (val < 0) {
+					illegal = true;
+					return L;
+				}
+				
+				if(val == 0) L[j][i] = 0;
+				else{
+					L[j][i] = sqrt(val);
+					L_not_zero[j].push_back(i);
+				}
+			} 
+			else{
+				auto val = (1.0 / L[i][i] * (M[j][i] - sum));
+				if(val == 0) L[j][i] = 0;
+				else{
+					L[j][i] = val;
+					L_not_zero[j].push_back(i);
+				}
+			}
+		}
+	}
+
+	if (false) { // Check that M = L*LT
+		for (auto j = 0; j < nvar; j++) {
+			for (auto i = 0; i < nvar; i++) {
+				auto sum = 0.0;
+				for(auto ii : L_not_zero[j]) sum += L[j][ii] * L[i][ii];
+			
 				if (M[j][i] < sum - TINY || M[j][i] > sum + TINY)
 					emsg("Inverse Problem");
 			}
@@ -631,11 +770,21 @@ bool Model::check_valid_cov_matrix(const vector <double> &param_value) const {
 
 
 /// Samples individual effects for a given individual i
-void Model::ind_effect_sample(vector <IndValue> &ind_value, const vector <double> &param_value) const {
+void Model::ind_effect_sample(vector <IndValue> &ind_value, const vector <double> &param_value) const 
+{
 	// Initialises the vector of individual effects for each individuals
 	for (auto &ind_val : ind_value)
 		ind_val.ind_effect.resize(nind_effect);
 
+	if(need_to_sample == false){  // When not sampling then set to zero
+		for (auto &ind_val : ind_value){
+			for(auto ie = 0; ie < nind_effect; ie++){
+				ind_val.ind_effect[ie] = 0;
+			}
+		}
+		return;
+	}
+	
 	/* // DEBUG
 	cout << "param_value = c("; for (auto i : param_value) cout << i << ", "; cout << ")\n";
 	// END */

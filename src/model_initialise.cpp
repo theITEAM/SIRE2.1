@@ -18,13 +18,16 @@ using namespace tinyxml2;
 
 
 /// The constructor for the model class
-Model::Model(string file) 
+Model::Model(string file, bool sim) 
 {
+	need_to_sample = sim;
+	
 	outp = false;
 	int num;
 	MPI_Comm_rank(MPI_COMM_WORLD,&num); 
 	if(num == 0) outp = true;
 	
+	if(outp == true) cout << "Loading input file..." << endl;
 	load_input_file(file);
 
 	output_model();
@@ -93,7 +96,7 @@ void Model::load_input_file(string file) {
 			if(algorithm != ALG_UNSET) emsg("Cannot set algorithm type twice.");
 			algorithm = ALG_MCMC;
 			
-			output_dir = get(child, "output_dir"); output_dir = "ALG4_INF_"+output_dir;
+			output_dir = get(child, "output_dir"); //output_dir = "ALG4_INF_"+output_dir;
 			nsample = get_int(child, "nsample");
 			nburnin = get_int(child, "burnin");
 			
@@ -123,6 +126,14 @@ void Model::load_input_file(string file) {
 			if(algorithm != ALG_UNSET) emsg("Cannot set algorithm type twice.");
 			algorithm = ALG_PAS;
 			
+			if (exist(child, "quench_power")){
+				emsg("'quench_power' does not need to be set for the 'pas' algorithm");
+			}
+			
+			if (exist(child, "quench")){
+				emsg("'quench' does not need to be set for the 'pas' algorithm");
+			}
+			
 			output_dir = get(child, "output_dir");
 			nsample = get_int(child, "nsample");
 			nsample_per_gen = get_int(child, "nsample_per_gen");
@@ -142,6 +153,13 @@ void Model::load_input_file(string file) {
 				if(val == "on"){	
 					cloglog.on = true;
 					cloglog.DeltaT = get_num(child, "deltaT");
+					cloglog.geometric_approx = false;
+					if(exist(child, "geometric_approx")){
+						auto val = get(child, "geometric_approx");
+						if(val == "on"){
+							cloglog.geometric_approx = true;
+						}
+					}
 				}
 			}
 		}
@@ -232,24 +250,28 @@ void Model::load_input_file(string file) {
 	}
 	ndiag_test = diag_test.size();
 
+	if(outp == true) cout << "Loading datatable..." << endl;
+
 	// Adds information from the data table
 	for (auto child : child_list) {
 		if (tab_name(child) == "datatable")
 			add_datatable(child);
 	}
-
+		
 	// Shifts fixed effects so they have an average of zero
 	shift_fixed_effects();
-
+	
 	// Loads matrices
-	if (nind_effect > 0)
-		add_identity_matrix();
+	if (nind_effect > 0) add_identity_matrix();
+
 	for (auto child : child_list) {
 		auto val = tab_name(child);
 		if (val == "A" || val == "A_nonzero" || val == "pedigree")
 			add_matrix(child);
 	}
 
+	if(sire_dam_info == true) construct_pedigree();
+//jj
 	// Loads covariance matrices
 	for (auto child : child_list) {
 		if (tab_name(child) == "covariance")
@@ -623,6 +645,22 @@ void Model::add_datatable(XMLNode *child) {
 	if (id_column < 0 || id_column >= tab.ncol)
 		emsg("'id' column out of range");
 
+
+	sire_dam_info = false;
+
+	auto sire_column = UNSET, dam_column = UNSET;
+	if (exist(child, "sire")){
+		sire_dam_info = true;
+		
+		sire_column = get_int(child, "sire") - 1;
+		if (sire_column < 0 || sire_column >= tab.ncol) emsg("'sire' column out of range");
+		
+		if(!exist(child, "sire")) emsg("'datatable' must have both 'sire' and 'dam' columns.");
+		
+		dam_column = get_int(child, "dam") - 1;
+		if (dam_column < 0 || dam_column >= tab.ncol) emsg("'dam' column out of range");
+	}
+	
 	auto group_column = UNSET;
 	if (ngroup > 1) {
 		group_column = get_int(child, "group") - 1;
@@ -682,9 +720,16 @@ void Model::add_datatable(XMLNode *child) {
 
 	for (auto r = 0; r < tab.nrow; r++) {          // We go through each row in the datatable
 		Individual ind;
-
+		
+		
 		ind.id = tab.ele[r][id_column];               // The id for the individual
 
+		ind.sire = ""; ind.dam = "";
+		if(sire_column != UNSET){
+			ind.sire = tab.ele[r][sire_column]; 
+			ind.dam = tab.ele[r][dam_column]; 
+		}
+		
 		ind.inside_group = true;                      // This determines if an individual belongs to a group
 		ind.group = UNSET;
 		ind.status = UNKNOWN;
@@ -696,6 +741,7 @@ void Model::add_datatable(XMLNode *child) {
 				ind.inside_group = false;
 				change_status(ind, NOT_INFECTED);
 			} else {
+				
 				g = number(val) - 1;
 				if (g < 0 || g >= group.size())
 					emsg("In datatable group value is out of range");

@@ -12,8 +12,10 @@ using namespace std;
 
 class Model {
 public:
-	AlgorithmType algorithm;                     // Sets which algorithm is used 
+	AlgorithmType algorithm;               // Sets which algorithm is used 
 
+	bool need_to_sample;                   // Set to true if need to sample ind eff
+	
 	unsigned int beta_param;               // Reference for the transmission rate parameter
 	InfModel inf_model;                    // Determines if density dependent or frequency dependent
 
@@ -77,6 +79,8 @@ public:
 	
 	int N;                                 // The number of individuals
 
+	bool sire_dam_info;                    // Set to true if sire and dam information
+  	
 	double dt;                             // Timestep (used in emulation)
 	unsigned int output_samples;           // The number of samples output (used in emulation)
 	unsigned int ngeneration;              // Number of generations (used in emulation)
@@ -91,7 +95,7 @@ public:
 
 	// In model_initialise.cc
 public:
-	Model(string file);
+	Model(string file, bool sim);
 	double calculate_derived(const Derived &der, const vector <double> &param_value) const;
 
 private:
@@ -137,8 +141,12 @@ public:
 private:
 	void add_identity_matrix();
 	void add_matrix(XMLNode *child);
+	void set_Ainv_from_pedigree(Matrix &mat);
+	void add_Ainv_sparse(Matrix &mat, const unsigned int j, const unsigned int i, double val);
+	void construct_pedigree();
 	void add_covariance(XMLNode *child);
 	vector < vector <double> > calculate_cholesky_matrix(const vector < vector <double> > &M, bool &illegal) const;
+	vector < vector <double> > calculate_cholesky_matrix_sparse(const vector < vector <double> > &M, bool &illegal) const;
 	void print_matrix(string name, const vector < vector <double> > &mat) const;
 
 	// In model_ind_effects.cc
@@ -260,5 +268,6 @@ public:
 	void cloglog_propose_infectivity_ind_effects(vector <IndValue> &ind_value, const vector <double> &param_value, vector <double> &L_ind_effect, vector <double> &L_cloglog, vector <Jump> &ind_effect_jump, const Quench &quench) const;
 	void cloglog_propose_joint_ie_var(vector <IndValue> &ind_value, vector <double> &param_value, vector <double> &L_ind_effect, vector <double> &L_cloglog, double &prior, vector <Jump> &pjie_jump, const bool burnin, const Quench &quench) const;
 	void set_time_ranges();
+	void check_relationship(string ind1, string ind2, const vector < vector <double> > A, double expected);
 };
 

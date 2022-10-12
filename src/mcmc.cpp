@@ -571,7 +571,7 @@ void MCMC::output_statistics()
 						auto cor = (av_PM_actual - av_PM * av_actual) / sqrt(var_PM * var_actual);
 
 						fout << model.ind_effect[ie].name << ": " << cor << '\t';
-						pa_csv << pa.name << ", " << model.ind_effect[ie].name << ", " << cor << '\n';
+						pa_csv << pa.name << "," << model.ind_effect[ie].name << "," << cor << '\n';
 					}
 				}
 				fout << '\n';
@@ -585,8 +585,9 @@ void MCMC::output_statistics()
 			ofstream ebvs_csv(model.output_dir + "/" + "ebvs.csv");
 			ebvs_csv << "id";
 			for (auto ie = 0; ie < model.nind_effect; ++ie){
+				ebvs_csv << "," << model.ind_effect[ie].name << " EBV";
 				if (model.individual[0].ind_effect_value[ie] != UNSET){
-					ebvs_csv << ", " << model.ind_effect[ie].name;
+					ebvs_csv << "," << model.ind_effect[ie].name << " True";
 				}
 			}
 			ebvs_csv << '\n';
@@ -594,18 +595,19 @@ void MCMC::output_statistics()
 			for (auto i = 0; i < model.individual.size(); ++ i) {
 				ebvs_csv << i + 1;
 				for (auto ie = 0; ie < model.nind_effect; ++ie){
-					if (model.individual[0].ind_effect_value[ie] != UNSET){
-						auto av = 0.0;
-						for(auto ch = 0; ch < mpi.ncore; ch++){
-							const auto &iepm = chain_ind_effect_posterior_mean[ch][i];
-							av += iepm.ind_effect_sum[ie] / nind_effect_posterior_mean;
-						}
-						av /= mpi.ncore;
-						
-						ebvs_csv << ", " << av;
-				
-						//ebvs_csv << ", " << ind_effect_posterior_mean[i].ind_effect_sum[ie] / nind_effect_posterior_mean;
+					//if (model.individual[0].ind_effect_value[ie] != UNSET){
+					auto av = 0.0;
+					for(auto ch = 0; ch < mpi.ncore; ch++){
+						const auto &iepm = chain_ind_effect_posterior_mean[ch][i];
+						av += iepm.ind_effect_sum[ie] / nind_effect_posterior_mean;
 					}
+					av /= mpi.ncore;
+						
+					ebvs_csv << "," << av;
+			
+					if (model.individual[0].ind_effect_value[ie] != UNSET){
+						ebvs_csv << "," << model.individual[i].ind_effect_value[ie]; 
+					}					
 				}
 				ebvs_csv << '\n';
 			}
@@ -625,8 +627,8 @@ void MCMC::output_statistics()
 			
 			auto stat = get_statistic(vec);
 
-			post_csv << model.param[th].name << ", " << stat.mean << ", " << stat.CImin << ", "  << stat.CImax << ", ";
-			post_csv << stat.ESS << ", ";
+			post_csv << model.param[th].name << "," << stat.mean << "," << stat.CImin << ","  << stat.CImax << ",";
+			post_csv << stat.ESS << ",";
 			
 			if(mpi.ncore == 1) post_csv << "---";
 			else{
@@ -668,8 +670,8 @@ void MCMC::output_statistics()
 			
 			auto stat = get_statistic(vec);
 
-			post_csv << der.name << ", " << stat.mean << ", " << stat.CImin << ", "  << stat.CImax << ", ";
-			post_csv << stat.ESS << ", ";
+			post_csv << der.name << "," << stat.mean << "," << stat.CImin << ","  << stat.CImax << ",";
+			post_csv << stat.ESS << ",";
 			
 			post_csv << "---";
 			post_csv << endl;
@@ -1015,7 +1017,7 @@ void MCMC::check_quenching()
 			
 			for(auto ch = 0; ch < chain_sample.size(); ch++){
 				opt << ch << " ";
-				opt << phi_ch[ch] << " ";
+				//opt << phi_ch[ch] << " ";
 				
 				vector <double> vec;
 				for (const auto &samp : chain_sample[ch])

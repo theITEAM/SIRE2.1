@@ -30,7 +30,17 @@
 // Run using: mpirun -n 20 ./sire examples/example1.xml 0
 // Note, -n denotes the number of cores (and chains) and 0 is the random seed used to generate MCMC. This can be changed to any other integer.
 
+// mpirun -n 20 ./sire Fishboost/scen-3-1.xml 0
+
 // Simulate using: ./sire examples/example1.xml 0 0
+// Simulate using: ./sire cloglog/sus_template.xml 0 0
+// Simulate using: ./sire cloglog/susinf_size_template.xml 0 0
+// Simulate using: ./sire cloglog/susinf_size10_template.xml 0 0
+
+// Inference using: nohup ./sire cloglog/Data_files/ALG_1_sus_h2_0.001.xml 0 > alg1
+// ./sire cloglog/Data_files/test.xml 0
+
+// Inference using: nohup ./sire cloglog/Data_files/ALG_2_susinf_size10.xml 0 > size10&
 
 
 #include <iostream>
@@ -72,18 +82,20 @@ int main(int argc, char *argv[])
 
 	auto seed = atoi(argv[2]);
 	set_seed(seed);                             // Sets the random seed
-	srand(seed);                      
-
-	string file(argv[1]);
-	Model model(file);                          // This loads up the model from the input XML file
+	srand(seed);                     
 
 	auto sim = false;
-	if (argc == 4)
-		sim = true;
+	if (argc == 4) sim = true;
+
+	string file(argv[1]);
+	Model model(file,sim);                          // This loads up the model from the input XML file
 
 	Simulate simulate(model);
+	//simulate.gather_results(); return 0;
+	
 	if (sim == true) {
-		simulate.run();    // This simulates from the model (used only for testing)
+		simulate.run(argv[1]);    // This simulates from the model (used only for testing)
+		//simulate.scan_h2(argv[1]);
 		return 0;
 	}
 

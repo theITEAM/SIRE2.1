@@ -13,7 +13,7 @@ using namespace std;
 #include "utils.hpp"
 
 /// This makes simultaneous changes to event times and distribution means
-void Model::propose_mean_event_times(vector <IndValue> &ind_value, vector <double> &param_value, vector <double> &L_inf_events, double &L_trans_events, vector <double> &L_diag_test, double &prior, vector <Jump> &mean_time_jump, const bool burnin, const Quench &quench) const 
+void Model::propose_mean_event_times(vector <IndValue> &ind_value, vector <double> &param_value, vector <double> &L_inf_events, double &L_trans_events, vector <double> &L_diag_test, double &prior, vector <Jump> &mean_time_jump, const bool burnin, const Anneal &anneal) const 
 {
 	timer[TIME_MEAN_EVENTS].start();
 	
@@ -57,6 +57,9 @@ void Model::propose_mean_event_times(vector <IndValue> &ind_value, vector <doubl
 						auto t_prop = t_b + fac*(t - t_b);
 						if(t_prop > t_a) flag = true;
 						
+						const auto &tran = individual[ind.index].trans_time_range[tr];
+						if(t_prop <= tran.tmin || t_prop >= tran.tmax) flag = true; 
+					
 						ind.trans_time[tr] = t_prop;
 					}
 				}
@@ -78,7 +81,7 @@ void Model::propose_mean_event_times(vector <IndValue> &ind_value, vector <doubl
 					auto dL_DT = 0.0;
 					for (auto g = 0; g < ngroup; g++) dL_DT += L_diag_test_prop[g] - L_diag_test[g];
 	
-					auto al = exp(quench.phi_L*sum  + quench.phi_DT*dL_DT + quench.phi_Pr*(prior_prop-prior) + num*log(fac));
+					auto al = exp(anneal.phi_L*sum  + anneal.phi_DT*dL_DT + anneal.phi_Pr*(prior_prop-prior) + num*log(fac));
 
 					if (MH_proposal(al,12)) {
 						jump.nac++;

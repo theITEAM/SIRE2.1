@@ -14,7 +14,7 @@ using namespace std;
 
 
 /// This makes proposals to snp effect parameters
-void Model::propose_snp_effects(vector <IndValue> &ind_value, vector <double> &param_value, vector <double> &L_inf_events, double &L_trans_events, double &prior, vector <Jump> &param_jump, const bool burnin, const Quench &quench) const {
+void Model::propose_snp_effects(vector <IndValue> &ind_value, vector <double> &param_value, vector <double> &L_inf_events, double &L_trans_events, double &prior, vector <Jump> &param_jump, const bool burnin, const Anneal &anneal) const {
 	// cout << "Model::propose_snp_effects()" << endl; // DEBUG
 	timer[TIME_SNP_EFFECTS].start();
 	for (auto se = 0; se < nsnp_effect; se++) {
@@ -52,7 +52,7 @@ void Model::propose_snp_effects(vector <IndValue> &ind_value, vector <double> &p
 				}
 
 				auto prior_change = calculate_prior_change(th, param_store, param_value);
-				auto al = exp(quench.phi_L*sum + quench.phi_Pr*prior_change);
+				auto al = exp(anneal.phi_L*sum + anneal.phi_Pr*prior_change);
 
 				jump.ntr++;
 				if (MH_proposal(al,14)) {

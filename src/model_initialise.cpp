@@ -90,31 +90,31 @@ void Model::load_input_file(string file) {
 	cloglog.on = false;
 		
 	// Gets basic properties of the MCMC chain
-	for (auto child : child_list) {
+	for (auto child : child_list) {	
 		auto val = tab_name(child);
 		if (val == "mcmc") {
 			if(algorithm != ALG_UNSET) emsg("Cannot set algorithm type twice.");
 			algorithm = ALG_MCMC;
 			
-			output_dir = get(child, "output_dir"); //output_dir = "ALG4_INF_"+output_dir;
+			output_dir = get(child, "output_dir");
 			nsample = get_int(child, "nsample");
 			nburnin = get_int(child, "burnin");
 			
-			nquench = UNSET;
-			if (exist(child, "quench")){
-				auto qu = get(child, "quench");
+			nanneal = UNSET;
+			if (exist(child, "anneal")){
+				auto qu = get(child, "anneal");
 				if(qu == "on"){
-					nprequench = nburnin/6;
-					nquench = nburnin/2;
+					npreanneal = nburnin/6;
+					nanneal = nburnin/2;
 				}
 				else{
-					if(qu != "off") emsg("quench='"+qu+"' not recognised");
+					if(qu != "off") emsg("anneal='"+qu+"' not recognised");
 				}
 			}
 				
-			quench_power = 4;
-			if (exist(child, "quench_power")){
-				quench_power = get_num(child, "quench_power");
+			anneal_power = 4;
+			if (exist(child, "anneal_power")){
+				anneal_power = get_num(child, "anneal_power");
 			}
 			
 			nthin = 1;
@@ -126,12 +126,12 @@ void Model::load_input_file(string file) {
 			if(algorithm != ALG_UNSET) emsg("Cannot set algorithm type twice.");
 			algorithm = ALG_PAS;
 			
-			if (exist(child, "quench_power")){
-				emsg("'quench_power' does not need to be set for the 'pas' algorithm");
+			if (exist(child, "anneal_power")){
+				emsg("'anneal_power' does not need to be set for the 'pas' algorithm");
 			}
 			
-			if (exist(child, "quench")){
-				emsg("'quench' does not need to be set for the 'pas' algorithm");
+			if (exist(child, "anneal")){
+				emsg("'anneal' does not need to be set for the 'pas' algorithm");
 			}
 			
 			output_dir = get(child, "output_dir");
@@ -141,7 +141,7 @@ void Model::load_input_file(string file) {
 			phi_final = 1;
 			if (exist(child, "phi_final")) phi_final = get_num(child, "phi_final");
 			
-			nquench = UNSET;
+			nanneal = UNSET;
 			
 			nthin = 1;
 			if (exist(child, "thin")) nthin = get_int(child, "thin");
@@ -168,7 +168,7 @@ void Model::load_input_file(string file) {
 			if(algorithm != ALG_UNSET) emsg("Cannot set algorithm type twice.");
 			algorithm = ALG_MAP;
 			
-			output_dir = get(child, "output_dir");
+			output_dir = get(child, "output_dir");	
 			dt =  get_num(child, "dt");
 			output_samples = get_int(child, "output_samples");
 		}
@@ -184,39 +184,12 @@ void Model::load_input_file(string file) {
 			num_per_gen = get_int(child, "npoint");
 			params = get(child, "params");
 		}
-		
-		if (val == "data") {
-			if (exist(child, "N"))
-				N = get_int(child, "N");
-			if (exist(child, "Z"))
-				ngroup = get_int(child, "Z");
-		}
 	}
 
 	if(algorithm == ALG_UNSET){
 		emsg("An algorithm must be specified in the input file.");
 	}
 	
-	// Sets up epidemiological groups
-	group.resize(ngroup);
-	for (auto g = 0; g < ngroup; g++) {
-		group[g].name = "Group " + to_string(g);
-		group[g].nind = 0;
-		group[g].index = g;
-	}
-
-	// Finds observation and inference time ranges for the groups
-	for (auto child : child_list) {
-		auto val = tab_name(child);
-		if (val == "inference" || val == "observation")
-			add_time_range(child);
-	}
-
-	// Add groups effects to the model
-	for (auto child : child_list) {
-		if (tab_name(child) == "group_effect")
-			switch_on_group_effect(get(child, "sigma"));
-	}
 
 	// Adds comparments to the model
 	for (auto child : child_list) {
@@ -252,12 +225,31 @@ void Model::load_input_file(string file) {
 
 	if(outp == true) cout << "Loading datatable..." << endl;
 
+	// Extracts information about groups
+	for (auto child : child_list) {
+		if (tab_name(child) == "datatable")
+			add_group(child);
+	}
+	
+	// Finds observation and inference time ranges for the groups
+	for (auto child : child_list) {
+		auto val = tab_name(child);
+		if (val == "inference" || val == "observation")
+			add_time_range(child);
+	}
+
+	// Add groups effects to the model
+	for (auto child : child_list) {
+		if (tab_name(child) == "group_effect")
+			switch_on_group_effect(get(child, "sigma"));
+	}
+	
 	// Adds information from the data table
 	for (auto child : child_list) {
 		if (tab_name(child) == "datatable")
 			add_datatable(child);
 	}
-		
+	
 	// Shifts fixed effects so they have an average of zero
 	shift_fixed_effects();
 	
@@ -271,7 +263,7 @@ void Model::load_input_file(string file) {
 	}
 
 	if(sire_dam_info == true) construct_pedigree();
-//jj
+
 	// Loads covariance matrices
 	for (auto child : child_list) {
 		if (tab_name(child) == "covariance")
@@ -363,7 +355,6 @@ void Model::set_infectivity(XMLNode *child)
 		auto vec = split(get(child, "individual_effect"), ',');
 		for (auto v : vec) {
 			auto ie = add_ind_effect(v);
-			//ind_effect[ie].infectivity_comp.push_back(comp.size());
 			infectivity.ind_effect.push_back(ie);
 		}
 	}
@@ -472,16 +463,18 @@ void Model::add_trans(XMLNode *child) {
 		}
 	}
 
-	tr.data_column = UNSET;
-	if (exist(child, "data_column"))
-		tr.data_column = get_int(child, "data_column") - 1;
-
-	tr.data_column_initial = UNSET;
+	tr.data_column = "";
+	if (exist(child, "data_column")){
+		tr.data_column = get(child, "data_column");
+	}
+	
+	tr.data_column_initial = "";
 	if (exist(child, "data_column_initial")){
-		if(tr.data_column != UNSET)
+		if(tr.data_column != ""){
 			emsg("'data_column' and 'data_column_initial' cannot both be set");
-		
-		tr.data_column_initial = get_int(child, "data_column_initial") - 1;
+		}
+	
+		tr.data_column_initial = get(child, "data_column_initial");
 	}
 
 	trans.push_back(tr);
@@ -512,8 +505,9 @@ void Model::add_diag_test(XMLNode *child) {
 
 	if (!exist(child, "data_column"))
 		emsg("'data_column' must be specified for a diagnostic test");
-	dt.data_column = get_int(child, "data_column") - 1;
-
+	
+	dt.data_column = get(child, "data_column");
+	
 	diag_test.push_back(dt);
 }
 
@@ -603,16 +597,28 @@ double Model::calculate_derived(const Derived &der, const vector <double> &param
 
 
 /// Add time range to the model
-void Model::add_time_range(XMLNode *child) {
+void Model::add_time_range(XMLNode *child) 
+{
 	// cout << "Model::add_time_range()" << endl; // DEBUG
 	auto tmin = get_num(child, "tmin");
 	auto tmax = get_num(child, "tmax");
-	auto gmin = 0, gmax = ngroup;
+	
+	vector <unsigned int> gr_list;
 	if (exist(child, "group")) {
-		gmin = int(get_int(child, "group")) - 1;
-		gmax = gmin + 1;
+		auto list = split(get(child, "group"),',');
+		for(auto i = 0; i < list.size(); i++){
+			auto g = 0; while(g < group.size() && list[i] != group[g].name) g++;
+			if(g == group.size()) emsg("Group name '"+list[i]+"' not recognised");
+			gr_list.push_back(g);
+		}
 	}
-	for (auto g = gmin; g < gmax; g++) {
+	else{
+		for (auto g = 0; g < ngroup; g++) {
+			gr_list.push_back(g);
+		}
+	}
+	
+	for (auto g : gr_list) {
 		if (tab_name(child) == "inference") {
 			group[g].inference_range.tmin = tmin;
 			group[g].inference_range.tmax = tmax;
@@ -633,57 +639,90 @@ void Model::add_simulated_column(Table &tab) const {
 }
 
 
+/// Add groups to the model
+void Model::add_group(XMLNode *child) 
+{
+	if(!exist(child, "file")) emsg("'datatable' must have 'file' specifed");
+	
+	auto file = get(child, "file");
+	auto tab = load_table(file);
+
+	auto group_column = UNSET;
+	if (exist(child, "group")) {
+		group_column = find_column(tab,get(child, "group"));
+	}
+	else{
+		cout << "All individuals in the same group. Is this right?" << endl;
+		Group gr; gr.name = "Group"; gr.nind = 0; gr.index = 0;
+		group.push_back(gr);
+	}
+	
+	if (group_column != UNSET) {
+		for(auto r = 0; r < tab.nrow; r++){
+			auto val = tab.ele[r][group_column];
+			if (val != "NA") {
+				auto g = 0; while(g < group.size() && val != group[g].name) g++;
+				
+				if(g == group.size()){
+					Group gr; gr.name = val; gr.nind = 0; gr.index = g;
+					group.push_back(gr);
+				}
+			}
+		}
+	}
+
+	ngroup = group.size();
+	cout << "# Groups loaded: " << ngroup << endl;
+}
+
 /// Add datatable
-void Model::add_datatable(XMLNode *child) {
-	// cout << "Model::add_datatable()" << endl; // DEBUG
-	auto text = child->FirstChild()->Value();
-	auto tab = create_table(text);
+void Model::add_datatable(XMLNode *child) 
+{
+	auto file = get(child, "file");
+	auto tab = load_table(file);
 
 	//add_simulated_column(tab);
 
-	auto id_column = get_int(child, "id") - 1;
-	if (id_column < 0 || id_column >= tab.ncol)
-		emsg("'id' column out of range");
+	auto id_column = find_column(tab,get(child, "id"));
 
-
+	auto group_column = UNSET;
+	if (exist(child, "group")) {
+		group_column = find_column(tab,get(child, "group"));
+	}
+	
+	auto pa_column = UNSET;
+	if (exist(child, "prediction_accuracy")) {
+		pa_column = find_column(tab,get(child, "prediction_accuracy"));
+	}
+	
 	sire_dam_info = false;
 
 	auto sire_column = UNSET, dam_column = UNSET;
 	if (exist(child, "sire")){
 		sire_dam_info = true;
 		
-		sire_column = get_int(child, "sire") - 1;
-		if (sire_column < 0 || sire_column >= tab.ncol) emsg("'sire' column out of range");
+		sire_column = find_column(tab,get(child, "sire"));
+
+		if(!exist(child, "dam")) emsg("'datatable' must have both 'sire' and 'dam' columns.");
 		
-		if(!exist(child, "sire")) emsg("'datatable' must have both 'sire' and 'dam' columns.");
-		
-		dam_column = get_int(child, "dam") - 1;
-		if (dam_column < 0 || dam_column >= tab.ncol) emsg("'dam' column out of range");
+		dam_column = find_column(tab,get(child, "dam"));
 	}
 	
-	auto group_column = UNSET;
-	if (ngroup > 1) {
-		group_column = get_int(child, "group") - 1;
-		if (group_column < 0 || group_column >= tab.ncol)
-			emsg("'group' column out of range");
-	}
-
-	auto init_comp_column = get_int(child, "initial_comp") - 1;
-	if (init_comp_column < 0 || init_comp_column >= tab.ncol)
-		emsg("'initial_comp' column out of range");
+	auto init_comp_column = find_column(tab,get(child, "initial_comp"));
 
 	auto comp_status_column = UNSET;
-	if (exist(child, "comp_status"))
-		comp_status_column = get_int(child, "comp_status") - 1;
-
+	if (exist(child, "comp_status")){
+		comp_status_column = find_column(tab,get(child, "comp_status"));
+	}
+	
 	vector <int> ind_effect_column(nind_effect);
 	for (auto e = 0; e < nind_effect; e++) {
 		if (exist(child, ind_effect[e].name)) {
-			ind_effect_column[e] = get_int(child, ind_effect[e].name) - 1;
-			if (ind_effect_column[e] < 0 || ind_effect_column[e] >= tab.ncol)
-				emsg("'" + ind_effect[e].name + "' column out of range");
-		} else
+			ind_effect_column[e] = find_column(tab,get(child,ind_effect[e].name));
+		}
+		else{
 			ind_effect_column[e] = UNSET;
+		}
 	}
 
 	set_ind_effect_initial = false;
@@ -697,30 +736,29 @@ void Model::add_datatable(XMLNode *child) {
 	for (auto fe = 0; fe < nfixed_effect; fe++) {
 		auto name = fixed_effect[fe].name;
 		if (exist(child, name)) {
-			fixed_effect_column[fe] = get_int(child, name) - 1;
-			if (fixed_effect_column[fe] < 0 || fixed_effect_column[fe] >= tab.ncol)
-				emsg("'" + name + "' column out of range");
-		} else
+			fixed_effect_column[fe] = find_column(tab,get(child, name));		
+		} 
+		else{
 			emsg("There must be a column specified for '" + name + "'");
+		}
 	}
 
 	vector <int> snp_effect_column(nsnp_effect);
 	for (auto se = 0; se < nsnp_effect; se++) {
 		auto name = snp_effect[se].name;
 		if (exist(child, name)) {
-			snp_effect_column[se] = get_int(child, name) - 1;
-			if (snp_effect_column[se] < 0 || snp_effect_column[se] >= tab.ncol)
-				emsg("'" + name + "' column out of range");
-		} else
+			snp_effect_column[se] = find_column(tab,get(child,name));
+		}
+		else{
 			emsg("There must be a column specified for '" + name + "'");
+		}
 	}
 
-	if (tab.nrow != N)
-		emsg("The number of individuals does not agree with the size of the datatable");
-
+	N	= tab.nrow;
+	cout << "# Individuals loaded: " << N << endl;
+	
 	for (auto r = 0; r < tab.nrow; r++) {          // We go through each row in the datatable
 		Individual ind;
-		
 		
 		ind.id = tab.ele[r][id_column];               // The id for the individual
 
@@ -728,6 +766,16 @@ void Model::add_datatable(XMLNode *child) {
 		if(sire_column != UNSET){
 			ind.sire = tab.ele[r][sire_column]; 
 			ind.dam = tab.ele[r][dam_column]; 
+		}
+
+		if(pa_column != UNSET){
+			auto val = tab.ele[r][pa_column];
+			auto i = 0; while(i < pred_acc.size() && val != pred_acc[i].name) i++;
+			if(i == pred_acc.size()){
+				PredAcc pa; pa.name = val;
+				pred_acc.push_back(pa);
+			}
+			pred_acc[i].ind.push_back(individual.size());
 		}
 		
 		ind.inside_group = true;                      // This determines if an individual belongs to a group
@@ -740,15 +788,21 @@ void Model::add_datatable(XMLNode *child) {
 			if (val == "NA") {
 				ind.inside_group = false;
 				change_status(ind, NOT_INFECTED);
-			} else {
-				
-				g = number(val) - 1;
-				if (g < 0 || g >= group.size())
-					emsg("In datatable group value is out of range");
+			}
+			else{
+				auto group_name =	val;
+				g = 0; while(g < group.size() && group_name != group[g].name) g++;
+				if(g == group.size()) emsg("Error finding group name '"+group_name+"'");
+					
 				ind.group = g;
 				group[g].ind_ref.push_back(individual.size());
 				group[g].nind++;
 			}
+		}
+		else{
+			ind.group = 0;
+			group[0].ind_ref.push_back(individual.size());
+			group[0].nind++;
 		}
 
 		ind.trans_time_initial.resize(ntrans);
@@ -789,26 +843,22 @@ void Model::add_datatable(XMLNode *child) {
 			ind.trans_obs_time[tr] = UNSET;
 			
 			if (ind.inside_group == true) {
-				auto data_column_initial = trans[tr].data_column_initial;
-				if (data_column_initial != UNSET) {
-					if (data_column_initial < 0 || data_column_initial >= tab.ncol)
-						emsg("'" + trans[tr].name + "' data column initial out of range");
-					
+				auto col = trans[tr].data_column_initial;
+				if (col != "") {
+					auto data_column_initial = find_column(tab,col);
+				
 					auto val = tab.ele[r][data_column_initial];
 					if (val != "no"){
 						ind.trans_time_initial[tr] = number(val);
 					}
 				}
 				
-				auto data_column = trans[tr].data_column;
-				
-				if (data_column != UNSET) {
-					if (data_column < 0 || data_column >= tab.ncol)
-						emsg("'" + trans[tr].name + "' data column out of range");
-				}
-			
+				col = trans[tr].data_column;
+					
 				if (timer[tr].tmin != UNSET) {
-					if (data_column != UNSET) {               // The data column provides information about this transition
+					if (col != "") {               // The data column provides information about this transition
+						auto data_column = find_column(tab,col);
+						
 						auto val = tab.ele[r][data_column];
 						if (val != "no")
 							emsg("For individual '" + ind.id + "' the value for transition '" + trans[tr].name + "' in column " + to_string(data_column + 1) + " is expected to be 'no'.");
@@ -820,7 +870,9 @@ void Model::add_datatable(XMLNode *child) {
 					else
 						timer[tr].tmax = LARGE;
 
-					if (data_column != UNSET) {                     // The data column provides information about this transition
+					if (col != "") {                     // The data column provides information about this transition
+						auto data_column = find_column(tab,col);
+					
 						auto val = tab.ele[r][data_column];
 						if (val == "no") {                            // The transition is not observered during the observation range
 							ind.trans_obs_time[tr] = LARGE;
@@ -989,7 +1041,8 @@ void Model::add_datatable(XMLNode *child) {
 		// Reads in any disease diagnostic test results
 		ind.diag_test_result.resize(ndiag_test);
 		for (auto dt = 0; dt < ndiag_test; dt++) {
-			auto val = tab.ele[r][diag_test[dt].data_column];
+			auto col = find_column(tab,diag_test[dt].data_column);
+			auto val = tab.ele[r][col];
 
 			if (ind.inside_group == true) {
 				auto vec = split(val, ',');

@@ -128,8 +128,11 @@ void MCMC::check_chain(unsigned int num) {
 			for (auto tr = 1; tr < model.ntrans; tr++) {
 				auto t = ind.trans_time[tr];
 				const auto &trange = indiv.trans_time_range[tr];
-				if (t < trange.tmin || t > trange.tmax)
+				if (t < trange.tmin || t > trange.tmax){
+					cout <<  num << " " << t << " " << trange.tmin << " " << trange.tmax << " jj\n";
+					cout << indiv.id << "id\n";
 					emsg("Transition not in time range");
+				}
 			}
 		}
 	}

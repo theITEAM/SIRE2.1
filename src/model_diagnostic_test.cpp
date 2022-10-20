@@ -73,7 +73,7 @@ double Model::likelihood_diag_test(const Group &gr, const vector <IndValue> &ind
 
 
 /// This makes proposals to diagnostic test parameters for sensitivity and specificity
-void Model::propose_Se_Sp(vector <IndValue> &ind_value, vector <double> &param_value, vector <double> &L_diag_test, double &prior, vector <Jump> &param_jump, const bool burnin, const Quench &quench) const {
+void Model::propose_Se_Sp(vector <IndValue> &ind_value, vector <double> &param_value, vector <double> &L_diag_test, double &prior, vector <Jump> &param_jump, const bool burnin, const Anneal &anneal) const {
 	// cout << "Model::propose_Se_Sp()" << endl; // DEBUG
 	timer[TIME_SE_SP].start();
 	for (const auto &dt : diag_test) {
@@ -100,7 +100,7 @@ void Model::propose_Se_Sp(vector <IndValue> &ind_value, vector <double> &param_v
 
 					auto prior_change = calculate_prior_change(th, param_store, param_value);
 
-					auto al = exp(quench.phi_DT*sum + quench.phi_Pr*prior_change);
+					auto al = exp(anneal.phi_DT*sum + anneal.phi_Pr*prior_change);
 
 					jump.ntr++;
 					if (MH_proposal(al,11)) {

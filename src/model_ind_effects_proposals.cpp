@@ -14,7 +14,7 @@ using namespace std;
 
 
 /// This makes proposals to susceptibility individual effects
-void Model::propose_susceptibility_ind_effects(vector <IndValue> &ind_value, const vector <double> &param_value, vector <double> &L_ind_effect, vector <double> &L_inf_events, vector <Jump> &ind_effect_jump, const Quench &quench) const {
+void Model::propose_susceptibility_ind_effects(vector <IndValue> &ind_value, const vector <double> &param_value, vector <double> &L_ind_effect, vector <double> &L_inf_events, vector <Jump> &ind_effect_jump, const Anneal &anneal) const {
 	// cout << "Model::propose_susceptibility_ind_effects()" << endl; // DEBUG
 	const auto &ind_eff = trans[0].ind_effect;
 	auto nie = ind_eff.size();
@@ -45,7 +45,7 @@ void Model::propose_susceptibility_ind_effects(vector <IndValue> &ind_value, con
 				auto ie = ind_eff[j];
 
 				auto sd = prec_ie.sd, mean = prec_ie.mean;
-				if(quench.phi_IE != 1) sd /= sqrt(quench.phi_IE);
+				if(anneal.phi_IE != 1) sd /= sqrt(anneal.phi_IE);
 				
 				auto ind_eff_store = ind.ind_effect[ie];
 				auto ind_eff_prop = normal_sample(mean, sd);
@@ -55,14 +55,14 @@ void Model::propose_susceptibility_ind_effects(vector <IndValue> &ind_value, con
 
 				auto dL_inf_ev = Li_change_sus(sus_fac_store, sus_fac, prec);
 				
-				auto inside = quench.phi_L*dL_inf_ev; if(inside > 100) inside = 100;
+				auto inside = anneal.phi_L*dL_inf_ev; if(inside > 100) inside = 100;
 				
 				auto al = exp(inside);
 	
 				if (false) { // Checks for correct sampling from individual effect distribution
 					auto probfi = normal_probability(ind_eff_store,mean,sd);
 					auto probif = normal_probability(ind_eff_prop, mean,sd);
-					cout << probfi - probif + quench.phi_IE*Li_change_ind_eff(ind_eff_store, ind_eff_prop, prec_ie) << "zero" << " " << ind_eff_store << " " <<  ind_eff_prop << endl;
+					cout << probfi - probif + anneal.phi_IE*Li_change_ind_eff(ind_eff_store, ind_eff_prop, prec_ie) << "zero" << " " << ind_eff_store << " " <<  ind_eff_prop << endl;
 				}
 					
 				if(indiv.group == UNSET) check_one(al,1);
@@ -208,7 +208,7 @@ double Model::Li_change_ind_eff(const double before, const double after, const P
 
 
 /// This makes proposals to transition individual effects
-void Model::propose_trans_ind_effects(vector <IndValue> &ind_value, const vector <double> &param_value, vector <double> &L_ind_effect, double &L_trans_events, vector <Jump> &ind_effect_jump, const Quench &quench) const {
+void Model::propose_trans_ind_effects(vector <IndValue> &ind_value, const vector <double> &param_value, vector <double> &L_ind_effect, double &L_trans_events, vector <Jump> &ind_effect_jump, const Anneal &anneal) const {
 	// cout << "Model::propose_trans_ind_effects()" << endl; // DEBUG
 	// Checks if individual effects exist
 	auto exist = false;
@@ -257,7 +257,7 @@ void Model::propose_trans_ind_effects(vector <IndValue> &ind_value, const vector
 						auto ie = ind_eff[j];
 
 						auto sd = prec_ie.sd;
-						if(quench.phi_IE != 1) sd /= sqrt(quench.phi_IE);
+						if(anneal.phi_IE != 1) sd /= sqrt(anneal.phi_IE);
 			
 						auto ind_eff_store = ind.ind_effect[ie];
 						auto ind_eff_prop = normal_sample(prec_ie.mean,sd);
@@ -268,7 +268,7 @@ void Model::propose_trans_ind_effects(vector <IndValue> &ind_value, const vector
 						auto al = 1.0;
 						if (ind.infected == true) {
 							L_prop = gamma_probability(dt, mean_av * exp(mean_fac), shape);
-							al = exp(quench.phi_L*(L_prop - L));
+							al = exp(anneal.phi_L*(L_prop - L));
 						}
 
 						if(indiv.group == UNSET) check_one(al,20);
@@ -332,7 +332,7 @@ void Model::propose_trans_ind_effects(vector <IndValue> &ind_value, const vector
 
 				for (auto loop = 0; loop < ind_effect_trans_prop2; loop++) {
 					auto sd = prec_ind_eff.sd;
-					if(quench.phi_IE != 1) sd /= sqrt(quench.phi_IE);
+					if(anneal.phi_IE != 1) sd /= sqrt(anneal.phi_IE);
 			
 					auto ind_eff_store = ind.ind_effect[ie];
 					auto ind_eff_prop = normal_sample(prec_ind_eff.mean,sd);
@@ -357,7 +357,7 @@ void Model::propose_trans_ind_effects(vector <IndValue> &ind_value, const vector
 					if (ind.infected == true) {
 						for (auto tr : tr_mean)
 							L_prop += gamma_probability(dt[tr], mean_av[tr] * exp(mean_fac[tr]), shape[tr]);
-						al = exp(quench.phi_L*(L_prop - L));
+						al = exp(anneal.phi_L*(L_prop - L));
 					}
 					
 					if(indiv.group == UNSET) check_one(al,3);
@@ -392,7 +392,7 @@ void Model::propose_trans_ind_effects(vector <IndValue> &ind_value, const vector
 
 
 /// This makes proposals to infectivity individual effects on a given compartment
-void Model::propose_infectivity_ind_effects(vector <IndValue> &ind_value, const vector <double> &param_value, vector <double> &L_ind_effect, vector <double> &L_inf_events, vector <Jump> &ind_effect_jump, const Quench &quench) const {
+void Model::propose_infectivity_ind_effects(vector <IndValue> &ind_value, const vector <double> &param_value, vector <double> &L_ind_effect, vector <double> &L_inf_events, vector <Jump> &ind_effect_jump, const Anneal &anneal) const {
 	// cout << "Model::propose_infectivity_ind_effects()" << endl; // DEBUG
 	
 	if(infectivity.ind_effect.size() == 0) return;
@@ -454,7 +454,7 @@ void Model::propose_infectivity_ind_effects(vector <IndValue> &ind_value, const 
 				auto ie = ind_eff[j];
 
 				auto sd = prec_ie.sd;
-				if(quench.phi_IE != 1) sd /= sqrt(quench.phi_IE); 
+				if(anneal.phi_IE != 1) sd /= sqrt(anneal.phi_IE); 
 			
 				auto ind_eff_store = ind.ind_effect[ie];
 				auto ind_eff_prop = normal_sample(prec_ie.mean,sd);
@@ -469,7 +469,7 @@ void Model::propose_infectivity_ind_effects(vector <IndValue> &ind_value, const 
 				} 
 				else dL_inf_ev = 0;
 
-				auto inside = quench.phi_L*dL_inf_ev; if(inside > 100) inside = 100;
+				auto inside = anneal.phi_L*dL_inf_ev; if(inside > 100) inside = 100;
 				
 				auto al = exp(inside);
 
@@ -669,7 +669,7 @@ void Model::propose_joint_ie_var_initialise()
 
 
 /// CHecks how ie/var joint proposals can be made
-void Model::propose_joint_ie_var(vector <IndValue> &ind_value, vector <double> &param_value, vector <double> &L_ind_effect, vector <double> &L_inf_events, double &L_trans_events, double &prior, vector <Jump> &pjie_jump, const bool burnin, const Quench &quench) const
+void Model::propose_joint_ie_var(vector <IndValue> &ind_value, vector <double> &param_value, vector <double> &L_ind_effect, vector <double> &L_inf_events, double &L_trans_events, double &prior, vector <Jump> &pjie_jump, const bool burnin, const Anneal &anneal) const
 {
 	timer[TIME_JOINT_IEVAR].start();
 		
@@ -706,7 +706,7 @@ void Model::propose_joint_ie_var(vector <IndValue> &ind_value, vector <double> &
 
 			auto prior_prop = calculate_prior(param_value);
 			
-			auto al = exp(quench.phi_L*dL + quench.phi_Pr*(prior_prop-prior) + 2*log(fac));
+			auto al = exp(anneal.phi_L*dL + anneal.phi_Pr*(prior_prop-prior) + 2*log(fac));
 	
 			jump.ntr++;
 			if (MH_proposal(al,120)) {

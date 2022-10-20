@@ -23,17 +23,17 @@ PAS::PAS(const Model &model) : model(model), mcmc(model)
 
 	mcmc.burnin = true;
 
-	mcmc.quench.phi_L = phi;
-	mcmc.quench.phi_DT = phi;
-	mcmc.quench.phi_IE = ie_fac + (1-ie_fac)*phi;
-	mcmc.quench.phi_Pr = 1;
+	mcmc.anneal.phi_L = phi;
+	mcmc.anneal.phi_DT = phi;
+	mcmc.anneal.phi_IE = ie_fac + (1-ie_fac)*phi;
+	mcmc.anneal.phi_Pr = 1;
 }
 
 void PAS::run()
 {
 	if(mpi.core == 0) initialise_gen_plot();
 	
-	timer[TIME_QUENCH].start();
+	timer[TIME_anneal].start();
 		
 	auto g = 0;
 	do{
@@ -60,7 +60,7 @@ void PAS::run()
 		g++;
 	}while(true);
 
-	timer[TIME_QUENCH].stop();
+	timer[TIME_anneal].stop();
 	
 	for(auto s = 0; s < model.nsample; s++) {
 		if(mpi.core == 0) show_progress(s, model.nsample, 100);
@@ -208,8 +208,8 @@ void PAS::bootstrap()
 	mcmc.check_chain(0);
 	
 	phi += dph_av;
-	mcmc.quench.phi_L = phi;
-	mcmc.quench.phi_DT = phi;
-	mcmc.quench.phi_IE = ie_fac + (1-ie_fac)*phi;;
+	mcmc.anneal.phi_L = phi;
+	mcmc.anneal.phi_DT = phi;
+	mcmc.anneal.phi_IE = ie_fac + (1-ie_fac)*phi;;
 }
 

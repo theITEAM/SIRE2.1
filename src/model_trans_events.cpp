@@ -43,7 +43,7 @@ double Model::calculate_L_trans_events(const vector <IndValue> &ind_value, const
 
 
 /// This makes proposals to transition parameters
-void Model::propose_trans_params(vector <IndValue> &ind_value, vector <double> &param_value, double &L_trans_events, double &prior, vector <Jump> &param_jump, const bool burnin, const Quench &quench) const {
+void Model::propose_trans_params(vector <IndValue> &ind_value, vector <double> &param_value, double &L_trans_events, double &prior, vector <Jump> &param_jump, const bool burnin, const Anneal &anneal) const {
 	// cout << "Model::propose_trans_params()" << endl; // DEBUG
 	timer[TIME_TRANS_PARAM_INIT].start();
 	auto precalc = set_precalc_trans_param(ind_value, param_value);
@@ -63,7 +63,7 @@ void Model::propose_trans_params(vector <IndValue> &ind_value, vector <double> &
 				auto prior_change = calculate_prior_change(th, param_store, param_value);
 				auto L_propose = calculate_L_trans_events_fast(precalc, param_value);
 
-				auto al = exp(quench.phi_L*(L_propose - L_trans_events) + quench.phi_Pr*prior_change);
+				auto al = exp(anneal.phi_L*(L_propose - L_trans_events) + anneal.phi_Pr*prior_change);
 				if (prior_change == ZERO_PRIOR) al = 0;
 
 				jump.ntr++;

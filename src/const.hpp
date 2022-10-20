@@ -63,7 +63,7 @@ enum MatrixType { DIAG, FULL};
 
 enum Timers { TIME_TOTAL,
 							TIME_UPDATE,
-							TIME_QUENCH,
+							TIME_anneal,
               TIME_TEMP, TIME_TRANS_PARAM_INIT, TIME_TRANS_PARAM,
               TIME_GROUP_EFFECT_INIT, TIME_GROUP_EFFECT, TIME_GROUP_SD,
               TIME_FIXED_EFFECTS, TIME_SNP_EFFECTS,

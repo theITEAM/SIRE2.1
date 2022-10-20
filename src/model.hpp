@@ -66,9 +66,9 @@ public:
 	int nburnin;                           // The number of burnin samples
 	int nthin;                             // The number of samples per trace output
 
-	int nquench;                           // The number of steps over which a quench is carried out
-	int nprequench;                        // The number of steps before quench
-	double quench_power;
+	int nanneal;                           // The number of steps over which a anneal is carried out
+	int npreanneal;                        // The number of steps before anneal
+	double anneal_power;
 
 	int nsample_per_gen;                   // The number of samples per generation
 	double phi_final;                      // The final inverse temperature (pas only)
@@ -107,6 +107,7 @@ private:
 	vector <unsigned int> get_param_sum(string st) const;
 	void add_derived(XMLNode *child);
 	void add_time_range(XMLNode *child);
+	void add_group(XMLNode *child);
 	void add_datatable(XMLNode *child);
 	void shift_fixed_effects();
 	int add_ind_effect(string st);
@@ -155,7 +156,7 @@ public:
 	void set_individual_quantities_group(unsigned int g, vector <IndValue> &ind_value, const vector <double> &param_value) const;
 	vector <double> calculate_L_ind_effect(const vector <IndValue> &ind_value, const vector <double> &param_value) const;
 	double likelihood_ind_effects(const Covariance &cov, const vector <IndValue> &ind_value, const vector <double> &param_value) const;
-	void propose_covariance_matrices(const Covariance &cov, const vector <IndValue> &ind_value, vector <double> &param_value, double &L_ind_effect, double &prior, vector <Jump> &param_jump, const bool burnin, const Quench &quench) const;
+	void propose_covariance_matrices(const Covariance &cov, const vector <IndValue> &ind_value, vector <double> &param_value, double &L_ind_effect, double &prior, vector <Jump> &param_jump, const bool burnin, const Anneal &anneal) const;
 	vector <InvCovMat> calculate_inv_cov_matrix(const vector <double> &param_value) const;
 	double ind_effect_gradient(unsigned int i, unsigned int ie, const vector <IndValue> &ind_value, const vector <InvCovMat> &inv_cov_matrix) const;
 	double covar_param_gradient(unsigned int th, const vector <IndValue> &ind_value, vector <double> param_value) const;
@@ -165,11 +166,11 @@ private:
 	
 	// In model_ind_effects_proposals.cc
 public:
-	void propose_susceptibility_ind_effects(vector <IndValue> &ind_value, const vector <double> &param_value, vector <double> &L_ind_effect, vector <double> &L_inf_events, vector <Jump> &ind_effect_jump, const Quench &quench) const;
-	void propose_trans_ind_effects(vector <IndValue> &ind_value, const vector <double> &param_value, vector <double> &L_ind_effect, double &L_trans_events, vector <Jump> &ind_effect_jump, const Quench &quench) const;
-	void propose_infectivity_ind_effects(vector <IndValue> &ind_value, const vector <double> &param_value, vector <double> &L_ind_effect, vector <double> &L_inf_events, vector <Jump> &ind_effect_jump, const Quench &quench) const;
+	void propose_susceptibility_ind_effects(vector <IndValue> &ind_value, const vector <double> &param_value, vector <double> &L_ind_effect, vector <double> &L_inf_events, vector <Jump> &ind_effect_jump, const Anneal &anneal) const;
+	void propose_trans_ind_effects(vector <IndValue> &ind_value, const vector <double> &param_value, vector <double> &L_ind_effect, double &L_trans_events, vector <Jump> &ind_effect_jump, const Anneal &anneal) const;
+	void propose_infectivity_ind_effects(vector <IndValue> &ind_value, const vector <double> &param_value, vector <double> &L_ind_effect, vector <double> &L_inf_events, vector <Jump> &ind_effect_jump, const Anneal &anneal) const;
 	void propose_joint_ie_var_initialise();
-	void propose_joint_ie_var(vector <IndValue> &ind_value, vector <double> &param_value, vector <double> &L_ind_effect, vector <double> &L_inf_events, double &L_trans_events, double &prior, vector <Jump> &pjie_jump, const bool burnin, const Quench &quench) const;
+	void propose_joint_ie_var(vector <IndValue> &ind_value, vector <double> &param_value, vector <double> &L_ind_effect, vector <double> &L_inf_events, double &L_trans_events, double &prior, vector <Jump> &pjie_jump, const bool burnin, const Anneal &anneal) const;
 	
 private:
 	vector <PrecalcLiSus> set_precalc_likelihood_sus(const vector <IndValue> &ind_value, const vector <double> &param_value) const;
@@ -186,40 +187,40 @@ public:
 	vector <double> calculate_L_inf_events(const vector <IndValue> &ind_value, const vector <double> &param_value) const;
 	void set_initial_events(vector <IndValue> &ind_value, const vector <double> &param_value) const;
 	double initial_event_sample(IndValue &ind, const vector <double> &param_value, EvInitSampType ev_samp) const;
-	void propose_transmission_rate(const vector <IndValue> &ind_value, vector <double> &param_value, vector <double> &L_inf_events, double &prior, vector <Jump> &param_jump, const bool burnin, const Quench &quench) const;
-	void propose_event_times(vector <IndValue> &ind_value, const vector <double> &param_value, vector <double> &L_inf_events, double &L_trans_events, vector <double> &L_diag_test, vector <Jump> &event_jump, const bool burnin, const Quench &quench) const;
-	void propose_add_rem(vector <IndValue> &ind_value, const vector <double> &param_value, vector <double> &L_inf_events, double &L_trans_events, vector <double> &L_diag_test, vector <Jump> &add_rem_jump, const bool burnin, const Quench &quench) const;
+	void propose_transmission_rate(const vector <IndValue> &ind_value, vector <double> &param_value, vector <double> &L_inf_events, double &prior, vector <Jump> &param_jump, const bool burnin, const Anneal &anneal) const;
+	void propose_event_times(vector <IndValue> &ind_value, const vector <double> &param_value, vector <double> &L_inf_events, double &L_trans_events, vector <double> &L_diag_test, vector <Jump> &event_jump, const bool burnin, const Anneal &anneal) const;
+	void propose_add_rem(vector <IndValue> &ind_value, const vector <double> &param_value, vector <double> &L_inf_events, double &L_trans_events, vector <double> &L_diag_test, vector <Jump> &add_rem_jump, const bool burnin, const Anneal &anneal) const;
 private:
 	void get_event_sequence(vector <Event> &event, double &S, const Group &gr, const vector <IndValue> &ind_value) const;
 	double likelihood_inf_events(const Group &gr, const vector <IndValue> &ind_value, const vector <double> &param_value) const;
 
 	// model_mean_event_proposals.cc
 public:
-	void propose_mean_event_times(vector <IndValue> &ind_value, vector <double> &param_value, vector <double> &L_inf_events, double &L_trans_events, vector <double> &L_diag_test, double &prior, vector <Jump> &mean_time_jump, const bool burnin, const Quench &quench) const;
+	void propose_mean_event_times(vector <IndValue> &ind_value, vector <double> &param_value, vector <double> &L_inf_events, double &L_trans_events, vector <double> &L_diag_test, double &prior, vector <Jump> &mean_time_jump, const bool burnin, const Anneal &anneal) const;
 	void propose_mean_event_times_initialise();
 
 
 	// model_trans_events.cc
 public:
 	double calculate_L_trans_events(const vector <IndValue> &ind_value, const vector <double> &param_value) const;
-	void propose_trans_params(vector <IndValue> &ind_value, vector <double> &param_value, double &L_trans_events, double &prior, vector <Jump> &param_jump, const bool burnin, const Quench &quench) const;
+	void propose_trans_params(vector <IndValue> &ind_value, vector <double> &param_value, double &L_trans_events, double &prior, vector <Jump> &param_jump, const bool burnin, const Anneal &anneal) const;
 private:
 	vector <PrecalcTransParam> set_precalc_trans_param(const vector <IndValue> &ind_value, vector <double> &param_value) const;
 	double calculate_L_trans_events_fast(const vector <PrecalcTransParam> &precalc, const vector <double> &param_value) const;
 
 	// model_fixed_effects.cc
 public:
-	void propose_fixed_effects(vector <IndValue> &ind_value, vector <double> &param_value, vector <double> &L_inf_events, double &L_trans_events, double &prior, vector <Jump> &param_jump, const bool burnin, const Quench &quench) const;
+	void propose_fixed_effects(vector <IndValue> &ind_value, vector <double> &param_value, vector <double> &L_inf_events, double &L_trans_events, double &prior, vector <Jump> &param_jump, const bool burnin, const Anneal &anneal) const;
 
 	// model_snp_effects.cc
 public:
-	void propose_snp_effects(vector <IndValue> &ind_value, vector <double> &param_value, vector <double> &L_inf_events, double &L_trans_events, double &prior, vector <Jump> &param_jump, const bool burnin, const Quench &quench) const;
+	void propose_snp_effects(vector <IndValue> &ind_value, vector <double> &param_value, vector <double> &L_inf_events, double &L_trans_events, double &prior, vector <Jump> &param_jump, const bool burnin, const Anneal &anneal) const;
 
 	// model_group_effect.cc
 public:
 	void switch_on_group_effect(string sigma);
-	void propose_group_effect_sigma(vector <double> &param_value, double &prior, vector <Jump> &param_jump, const bool burnin, const Quench &quench) const;
-	void propose_group_effect(const vector <IndValue> &ind_value, vector <double> &param_value, vector <double> &L_inf_events, double &prior, vector <Jump> &param_jump, const bool burnin, const Quench &quench) const;
+	void propose_group_effect_sigma(vector <double> &param_value, double &prior, vector <Jump> &param_jump, const bool burnin, const Anneal &anneal) const;
+	void propose_group_effect(const vector <IndValue> &ind_value, vector <double> &param_value, vector <double> &L_inf_events, double &prior, vector <Jump> &param_jump, const bool burnin, const Anneal &anneal) const;
 private:
 	PrecalcGroupEffect set_precalc_group_effect(const Group &gr, const vector <IndValue> &ind_value, const vector <double> &param_value) const;
 	double likelihood_inf_events_fast(const PrecalcGroupEffect &prec, const double value) const;
@@ -227,7 +228,7 @@ private:
 	// In model_diagnostic_test.cc
 public:
 	vector <double> calculate_L_diag_test(const vector <IndValue> &ind_value, const vector <double> &param_value) const;
-	void propose_Se_Sp(vector <IndValue> &ind_value, vector <double> &param_value, vector <double> &L_diag_test, double &prior, vector <Jump> &param_jump, const bool burnin,const Quench &quench) const;
+	void propose_Se_Sp(vector <IndValue> &ind_value, vector <double> &param_value, vector <double> &L_diag_test, double &prior, vector <Jump> &param_jump, const bool burnin,const Anneal &anneal) const;
 private:
 	double likelihood_diag_test(const Group &gr, const vector <IndValue> &ind_value, const vector <double> &param_value) const;
 
@@ -241,7 +242,10 @@ private:
 	int find_comp(string st) const;
 	int find_param(string st, ParamType type);
 	int find_ind(string id) const;
-	Table create_table(const string st) const;
+	Table create_text_table(const string st) const;
+	Table load_table(const string file, const bool head = true);
+	unsigned int find_column(const Table &tab, const string name);
+
 	void remove_comments(string &str) const;
 	string brackets(string st) const;
 	void output_model() const;
@@ -262,11 +266,11 @@ public:
 	void initialise_cloglog();
 	vector <double> calculate_L_cloglog(const vector <IndValue> &ind_value, const vector <double> &param) const;
 	double calculate_L_cloglog_ind(const vector <IndValue> &ind_value, const vector <double> &param, unsigned int m) const;
-	void cloglog_propose_transmission_rate(const vector <IndValue> &ind_value, vector <double> &param_value, vector <double> &L_cloglog, double &prior, vector <Jump> &param_jump, const bool burnin, const Quench &quench) const;
-	void cloglog_propose_trans_params(vector <IndValue> &ind_value, vector <double> &param_value, vector <double> &L_cloglog, double &prior, vector <Jump> &param_jump, const bool burnin, const Quench &quench) const;
-	void cloglog_propose_susceptibility_ind_effects(vector <IndValue> &ind_value, const vector <double> &param_value, vector <double> &L_ind_effect, vector <double> &L_cloglog, vector <Jump> &ind_effect_jump, const Quench &quench) const;
-	void cloglog_propose_infectivity_ind_effects(vector <IndValue> &ind_value, const vector <double> &param_value, vector <double> &L_ind_effect, vector <double> &L_cloglog, vector <Jump> &ind_effect_jump, const Quench &quench) const;
-	void cloglog_propose_joint_ie_var(vector <IndValue> &ind_value, vector <double> &param_value, vector <double> &L_ind_effect, vector <double> &L_cloglog, double &prior, vector <Jump> &pjie_jump, const bool burnin, const Quench &quench) const;
+	void cloglog_propose_transmission_rate(const vector <IndValue> &ind_value, vector <double> &param_value, vector <double> &L_cloglog, double &prior, vector <Jump> &param_jump, const bool burnin, const Anneal &anneal) const;
+	void cloglog_propose_trans_params(vector <IndValue> &ind_value, vector <double> &param_value, vector <double> &L_cloglog, double &prior, vector <Jump> &param_jump, const bool burnin, const Anneal &anneal) const;
+	void cloglog_propose_susceptibility_ind_effects(vector <IndValue> &ind_value, const vector <double> &param_value, vector <double> &L_ind_effect, vector <double> &L_cloglog, vector <Jump> &ind_effect_jump, const Anneal &anneal) const;
+	void cloglog_propose_infectivity_ind_effects(vector <IndValue> &ind_value, const vector <double> &param_value, vector <double> &L_ind_effect, vector <double> &L_cloglog, vector <Jump> &ind_effect_jump, const Anneal &anneal) const;
+	void cloglog_propose_joint_ie_var(vector <IndValue> &ind_value, vector <double> &param_value, vector <double> &L_ind_effect, vector <double> &L_cloglog, double &prior, vector <Jump> &pjie_jump, const bool burnin, const Anneal &anneal) const;
 	void set_time_ranges();
 	void check_relationship(string ind1, string ind2, const vector < vector <double> > A, double expected);
 };

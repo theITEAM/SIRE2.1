@@ -247,7 +247,7 @@ vector <unsigned int> Model::get_trlist(unsigned int c) const
 	auto j = c;
 	while(j < ntrans){
 		trlist.push_back(j);
-		if(trans[j].data_column != UNSET) break;
+		if(trans[j].data_column != "") break;
 		j++;
 	}
 	

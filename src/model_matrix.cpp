@@ -52,8 +52,12 @@ void Model::add_identity_matrix() {
 /// Adds a relationship matrix to the model
 void Model::add_matrix(XMLNode *child) 
 {
-	auto text = child->FirstChild()->Value();
-	auto tab = create_table(text);
+	if(!exist(child, "file")) emsg("'"+tab_name(child)+"' must have 'file' specifed");
+	auto file = get(child, "file");
+	auto tab = load_table(file);
+	
+	//auto text = child->FirstChild()->Value();
+	//auto tab = create_table(text);
 
 	Matrix mat;
 	mat.name = get(child, "name");
@@ -305,7 +309,7 @@ void Model::add_covariance(XMLNode *child) {
 	for (auto tag = child->FirstChild(); tag; tag = tag->NextSibling()) {
 		if (tab_name(tag) == "variance") {
 			auto text = tag->FirstChild()->Value();
-			auto tab = create_table(text);
+			auto tab = create_text_table(text);
 			covar.var_param.resize(E);
 			for (auto row = 0; row < E; row++) {
 				auto th = find_param(tab.ele[row][0], COVAR_MATRIX);
@@ -316,7 +320,7 @@ void Model::add_covariance(XMLNode *child) {
 
 		if (tab_name(tag) == "correlation") {
 			auto text = tag->FirstChild()->Value();
-			auto tab = create_table(text);
+			auto tab = create_text_table(text);
 			covar.cor_param.resize(E);
 			for (auto row = 0; row < E; row++) {
 				covar.cor_param[row].resize(E);

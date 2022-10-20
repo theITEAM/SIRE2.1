@@ -123,7 +123,7 @@ bool Model::exist(XMLNode *node, std::string attr) const {
 
 
 /// Creates a table from a string
-Table Model::create_table(const string st) const {
+Table Model::create_text_table(const string st) const {
 	Table tab;
 
 	tab.ncol = UNSET;
@@ -150,6 +150,71 @@ Table Model::create_table(const string st) const {
 	tab.nrow = tab.ele.size();
 
 	return tab;
+}
+
+
+/// Loads a table from a file
+Table Model::load_table(const string file, const bool head)
+{
+	if(file.length() < 4) emsg("File '"+file+"' must be '.csv', '.tsv' or '.txt'");
+	char sep;
+	auto end = file.substr(file.length()-4,4);
+	if(end == ".csv") sep = ',';
+	else{
+		if(end == ".txt" || end == ".tsv" ) sep = '\t';
+		else emsg("File '"+file+"' must be '.csv', '.tsv' or '.txt'");
+	}
+	
+	ifstream in;
+
+  auto used_file = file;
+	in.open(used_file.c_str());
+	if(!in) emsg("Cannot open the file '"+used_file+"'.");
+	
+	Table tab;
+	tab.file = file;
+	
+	string line;
+	do{
+		getline(in,line);
+	}while(line.substr(0,1) == "#");
+		
+	if(head == true){
+		tab.heading = split(line,sep);
+		tab.ncol = tab.heading.size();
+	}
+	else{
+		tab.ncol = 0;
+	}
+	
+	do{
+		getline(in,line);
+		if(in.eof()) break;
+
+		auto vec = split(line,sep);
+	
+		if(tab.ncol == 0) tab.ncol = vec.size();
+		else{
+			if(vec.size() != tab.ncol) emsg("Rows in the file '"+file+"' do not all share the same number of columns.");
+		}
+		
+		tab.ele.push_back(vec);
+	}while(true);
+	tab.nrow = tab.ele.size();
+	
+	return tab;
+}
+
+
+// Finds a column in a table (but doesn't return an error if can't find)
+unsigned int Model::find_column(const Table &tab, const string name)
+{
+	for(auto c = 0u; c < tab.ncol; c++){
+		if(tab.heading[c] == name) return c;
+	}
+		
+	emsg("Cannot find column: "+name);
+	return UNSET;	
 }
 
 
@@ -270,10 +335,10 @@ void Model::output_model() const {
 		}
 
 		model_out << "   Data column: ";
-		if (tr.data_column == UNSET)
+		if (tr.data_column == "")
 			model_out << "Unset";
 		else
-			model_out << tr.data_column + 1;
+			model_out << tr.data_column;
 
 		model_out << endl;
 	}

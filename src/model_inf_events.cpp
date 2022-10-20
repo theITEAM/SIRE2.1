@@ -237,7 +237,7 @@ double Model::likelihood_inf_events(const Group &gr, const vector <IndValue> &in
 
 
 /// This resamples the transmission rate parameter
-void Model::propose_transmission_rate(const vector <IndValue> &ind_value, vector <double> &param_value, vector <double> &L_inf_events, double &prior, vector <Jump> &param_jump, const bool burnin, const Quench &quench) const {
+void Model::propose_transmission_rate(const vector <IndValue> &ind_value, vector <double> &param_value, vector <double> &L_inf_events, double &prior, vector <Jump> &param_jump, const bool burnin, const Anneal &anneal) const {
 	if(param[beta_param].prior_type == FIXED_PRIOR) return;
 
 	// cout << "Model::propose_transmission_rate()" << endl; // DEBUG
@@ -312,7 +312,7 @@ void Model::propose_transmission_rate(const vector <IndValue> &ind_value, vector
 		emsg("done");
 	}
 	
-	auto phi = quench.phi_L; 
+	auto phi = anneal.phi_L; 
 	
 	if(phi < 0.001 || ran() < 0.1){                     // This performs a random walk proposal
 		auto th = beta_param;
@@ -337,7 +337,7 @@ void Model::propose_transmission_rate(const vector <IndValue> &ind_value, vector
 				dL += L_inf_events_prop[g] - L_inf_events[g];
 			}
 		
-			auto inside = quench.phi_L*dL + quench.phi_Pr*prior_change;
+			auto inside = anneal.phi_L*dL + anneal.phi_Pr*prior_change;
 			if(inside > 100.0) inside = 100;
 				
 			auto al = exp(inside);
@@ -372,7 +372,7 @@ void Model::propose_transmission_rate(const vector <IndValue> &ind_value, vector
 
 		auto prior_change = calculate_prior_change(beta_param, beta, param_value);
 
-		auto al = exp(quench.phi_Pr*prior_change);
+		auto al = exp(anneal.phi_Pr*prior_change);
 	
 		auto &jump = param_jump[beta_param];
 
@@ -385,7 +385,7 @@ void Model::propose_transmission_rate(const vector <IndValue> &ind_value, vector
 			auto probfi = gamma_probability(beta, mean, shape);
 			auto probif = gamma_probability(param_value[beta_param], mean, shape);
 			cout << Lp-Li << " " 
-					 << quench.phi_L*(Lp-Li) + probfi-probif + quench.phi_Pr*prior_change  
+					 << anneal.phi_L*(Lp-Li) + probfi-probif + anneal.phi_Pr*prior_change  
 					 << " check" << endl;
 			//emsg("do");
 		}
@@ -523,7 +523,7 @@ double Model::initial_event_sample(IndValue &ind, const vector <double> &param_v
 
 
 /// This makes changes to event times
-void Model::propose_event_times(vector <IndValue> &ind_value, const vector <double> &param_value, vector <double> &L_inf_events, double &L_trans_events, vector <double> &L_diag_test, vector <Jump> &event_jump, const bool burnin, const Quench &quench) const 
+void Model::propose_event_times(vector <IndValue> &ind_value, const vector <double> &param_value, vector <double> &L_inf_events, double &L_trans_events, vector <double> &L_diag_test, vector <Jump> &event_jump, const bool burnin, const Anneal &anneal) const 
 {
 	// cout << "Model::propose_event_times()" << endl; // DEBUG
 	timer[TIME_EVENTS].start();
@@ -722,7 +722,7 @@ void Model::propose_event_times(vector <IndValue> &ind_value, const vector <doub
 			if (false)
 				cout << L_trans_events_prop - L_trans_events + probfi - probif << " shoudl be zero" << endl;
 
-			auto al = exp(quench.phi_L*(L_inf_events_prop - L_inf_events[g]) +  quench.phi_DT*(L_diag_test_prop - L_diag_test[g]) + quench.phi_L*(L_trans_events_prop - L_trans_events) + probfi - probif);
+			auto al = exp(anneal.phi_L*(L_inf_events_prop - L_inf_events[g]) +  anneal.phi_DT*(L_diag_test_prop - L_diag_test[g]) + anneal.phi_L*(L_trans_events_prop - L_trans_events) + probfi - probif);
 			
 if(std::isnan(al)) cout << L_inf_events_prop << " " << L_inf_events[g] << " " << L_diag_test_prop  << " " << L_diag_test[g] << " " << L_trans_events_prop << " " << L_trans_events << " hh\n";
 			jump.ntr++;
@@ -773,7 +773,7 @@ double InfSampler::sample_prob(double t) {
 
 /// Makes proposals to add and remove infected individuals (whose infection status is unknown)
 /// NOTE: This could be improved by doing a better job samping the initial infection time
-void Model::propose_add_rem(vector <IndValue> &ind_value, const vector <double> &param_value, vector <double> &L_inf_events, double &L_trans_events, vector <double> &L_diag_test, vector <Jump> &add_rem_jump, const bool burnin, const Quench &quench) const {
+void Model::propose_add_rem(vector <IndValue> &ind_value, const vector <double> &param_value, vector <double> &L_inf_events, double &L_trans_events, vector <double> &L_diag_test, vector <Jump> &add_rem_jump, const bool burnin, const Anneal &anneal) const {
 	// cout << "Model::propose_add_rem()" << endl; // DEBUG
 	timer[TIME_ADD_REM].start();
 
@@ -932,7 +932,7 @@ void Model::propose_add_rem(vector <IndValue> &ind_value, const vector <double> 
 					auto L_diag_test_prop = likelihood_diag_test(gr, ind_value, param_value);
 					timer[TIME_ADD_REM_LIKE].stop();
 
-					auto al = exp(quench.phi_L*(L_inf_events_prop - L_inf_events[g] + L_trans_events_prop - L_trans_events) +  quench.phi_DT*(L_diag_test_prop - L_diag_test[g])
+					auto al = exp(anneal.phi_L*(L_inf_events_prop - L_inf_events[g] + L_trans_events_prop - L_trans_events) +  anneal.phi_DT*(L_diag_test_prop - L_diag_test[g])
 					               + probfi - probif);
 
 					jump.ntr++;

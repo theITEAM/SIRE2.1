@@ -20,29 +20,29 @@ void MCMC::update_cloglog()
 
 	timer[TIME_UPDATE].start();
 	
-	model.cloglog_propose_transmission_rate(ind_value, param_value, L_cloglog, prior, param_jump, burnin, quench);
+	model.cloglog_propose_transmission_rate(ind_value, param_value, L_cloglog, prior, param_jump, burnin, anneal);
 	
 	if(check_all == true) check_chain(1);
 	
-	model.cloglog_propose_trans_params(ind_value, param_value, L_cloglog, prior, param_jump, burnin, quench);
+	model.cloglog_propose_trans_params(ind_value, param_value, L_cloglog, prior, param_jump, burnin, anneal);
 
 	if(check_all == true) check_chain(2);
 
 	for (auto c = 0; c < model.ncovariance; c++){
-		model.propose_covariance_matrices(model.covariance[c], ind_value, param_value, L_ind_effect[c], prior, param_jump, burnin, quench);
+		model.propose_covariance_matrices(model.covariance[c], ind_value, param_value, L_ind_effect[c], prior, param_jump, burnin, anneal);
 	}
 	
 	if(check_all == true) check_chain(3);
 	
-	model.cloglog_propose_susceptibility_ind_effects(ind_value, param_value, L_ind_effect, L_cloglog, ind_effect_jump, quench);
+	model.cloglog_propose_susceptibility_ind_effects(ind_value, param_value, L_ind_effect, L_cloglog, ind_effect_jump, anneal);
 
 	if(check_all == true) check_chain(3);
 	
-	model.cloglog_propose_infectivity_ind_effects(ind_value, param_value, L_ind_effect, L_cloglog, ind_effect_jump, quench);
+	model.cloglog_propose_infectivity_ind_effects(ind_value, param_value, L_ind_effect, L_cloglog, ind_effect_jump, anneal);
 
 	if(check_all == true) check_chain(4);
 
-	model.cloglog_propose_joint_ie_var(ind_value, param_value, L_ind_effect, L_cloglog, prior, var_ie_joint_jump, burnin, quench);
+	model.cloglog_propose_joint_ie_var(ind_value, param_value, L_ind_effect, L_cloglog, prior, var_ie_joint_jump, burnin, anneal);
 	
 	if(check_all == true) check_chain(5);
 
@@ -254,7 +254,7 @@ void Model::initialise_cloglog()
 
 
 /// Proposes changes to beta
-void Model::cloglog_propose_transmission_rate(const vector <IndValue> &ind_value, vector <double> &param_value, vector <double> &L_cloglog, double &prior, vector <Jump> &param_jump, const bool burnin, const Quench &quench) const 
+void Model::cloglog_propose_transmission_rate(const vector <IndValue> &ind_value, vector <double> &param_value, vector <double> &L_cloglog, double &prior, vector <Jump> &param_jump, const bool burnin, const Anneal &anneal) const 
 {
 	auto th = beta_param;
 	auto &jump = param_jump[th];
@@ -281,7 +281,7 @@ void Model::cloglog_propose_transmission_rate(const vector <IndValue> &ind_value
 	}
 	if(dL > 100) dL = 100;
 	
-	auto al = exp(quench.phi_L*dL + quench.phi_Pr*prior_change);
+	auto al = exp(anneal.phi_L*dL + anneal.phi_Pr*prior_change);
 		
 	jump.ntr++;
 	if (MH_proposal(al,16)) {
@@ -299,7 +299,7 @@ void Model::cloglog_propose_transmission_rate(const vector <IndValue> &ind_value
 
 
 /// This makes proposals to transition parameters
-void Model::cloglog_propose_trans_params(vector <IndValue> &ind_value, vector <double> &param_value, vector <double> &L_cloglog, double &prior, vector <Jump> &param_jump, const bool burnin, const Quench &quench) const 
+void Model::cloglog_propose_trans_params(vector <IndValue> &ind_value, vector <double> &param_value, vector <double> &L_cloglog, double &prior, vector <Jump> &param_jump, const bool burnin, const Anneal &anneal) const 
 {	
 	timer[TIME_TRANS_PARAM].start();
 
@@ -328,7 +328,7 @@ void Model::cloglog_propose_trans_params(vector <IndValue> &ind_value, vector <d
 				}
 				if(dL > 100) dL = 100;
 
-				auto al = exp(quench.phi_L*dL + quench.phi_Pr*prior_change);
+				auto al = exp(anneal.phi_L*dL + anneal.phi_Pr*prior_change);
 		
 				jump.ntr++;
 				if (MH_proposal(al,17)) {
@@ -351,7 +351,7 @@ void Model::cloglog_propose_trans_params(vector <IndValue> &ind_value, vector <d
 
 
 /// This makes proposals to susceptibility individual effects
-void Model::cloglog_propose_susceptibility_ind_effects(vector <IndValue> &ind_value, const vector <double> &param_value, vector <double> &L_ind_effect, vector <double> &L_cloglog, vector <Jump> &ind_effect_jump, const Quench &quench) const {
+void Model::cloglog_propose_susceptibility_ind_effects(vector <IndValue> &ind_value, const vector <double> &param_value, vector <double> &L_ind_effect, vector <double> &L_cloglog, vector <Jump> &ind_effect_jump, const Anneal &anneal) const {
 	// cout << "Model::propose_susceptibility_ind_effects()" << endl; // DEBUG
 	const auto &ind_eff = trans[0].ind_effect;
 	auto nie = ind_eff.size();
@@ -378,7 +378,7 @@ void Model::cloglog_propose_susceptibility_ind_effects(vector <IndValue> &ind_va
 			auto ie = ind_eff[j];
 
 			auto sd = prec_ie.sd, mean = prec_ie.mean;
-			if(quench.phi_IE != 1) sd /= sqrt(quench.phi_IE);
+			if(anneal.phi_IE != 1) sd /= sqrt(anneal.phi_IE);
 			
 			auto ind_eff_store = ind.ind_effect[ie];
 			auto ind_eff_prop = normal_sample(mean, sd);
@@ -408,14 +408,14 @@ void Model::cloglog_propose_susceptibility_ind_effects(vector <IndValue> &ind_va
 				dL += store[j] - L_cloglog[m];
 			}
 			
-			auto inside = quench.phi_L*dL; if(inside > 100) inside = 100;
+			auto inside = anneal.phi_L*dL; if(inside > 100) inside = 100;
 			
 			auto al = exp(inside);
 
 			if (false) { // Checks for correct sampling from individual effect distribution
 				auto probfi = normal_probability(ind_eff_store,mean,sd);
 				auto probif = normal_probability(ind_eff_prop, mean,sd);
-				cout << probfi - probif + quench.phi_IE*Li_change_ind_eff(ind_eff_store, ind_eff_prop, prec_ie) << "zero" << " " << ind_eff_store << " " <<  ind_eff_prop << endl;
+				cout << probfi - probif + anneal.phi_IE*Li_change_ind_eff(ind_eff_store, ind_eff_prop, prec_ie) << "zero" << " " << ind_eff_store << " " <<  ind_eff_prop << endl;
 			}
 				
 			if(indiv.group == UNSET) check_one(al,1);
@@ -443,7 +443,7 @@ void Model::cloglog_propose_susceptibility_ind_effects(vector <IndValue> &ind_va
 
 
 /// This makes proposals to susceptibility individual effects
-void Model::cloglog_propose_infectivity_ind_effects(vector <IndValue> &ind_value, const vector <double> &param_value, vector <double> &L_ind_effect, vector <double> &L_cloglog, vector <Jump> &ind_effect_jump, const Quench &quench) const {
+void Model::cloglog_propose_infectivity_ind_effects(vector <IndValue> &ind_value, const vector <double> &param_value, vector <double> &L_ind_effect, vector <double> &L_cloglog, vector <Jump> &ind_effect_jump, const Anneal &anneal) const {
 	// cout << "Model::propose_susceptibility_ind_effects()" << endl; // DEBUG
 	const auto &ind_eff = infectivity.ind_effect;
 	auto nie = ind_eff.size();
@@ -470,7 +470,7 @@ void Model::cloglog_propose_infectivity_ind_effects(vector <IndValue> &ind_value
 			auto ie = ind_eff[j];
 
 			auto sd = prec_ie.sd, mean = prec_ie.mean;
-			if(quench.phi_IE != 1) sd /= sqrt(quench.phi_IE);
+			if(anneal.phi_IE != 1) sd /= sqrt(anneal.phi_IE);
 			
 			auto ind_eff_store = ind.ind_effect[ie];
 			auto ind_eff_prop = normal_sample(mean, sd);
@@ -509,13 +509,13 @@ void Model::cloglog_propose_infectivity_ind_effects(vector <IndValue> &ind_value
 				dL += store[j] - L_cloglog[m];
 			}
 			
-			auto inside = quench.phi_L*dL; if(inside > 100) inside = 100;
+			auto inside = anneal.phi_L*dL; if(inside > 100) inside = 100;
 			auto al = exp(inside);
 
 			if (false) { // Checks for correct sampling from individual effect distribution
 				auto probfi = normal_probability(ind_eff_store,mean,sd);
 				auto probif = normal_probability(ind_eff_prop, mean,sd);
-				cout << probfi - probif + quench.phi_IE*Li_change_ind_eff(ind_eff_store, ind_eff_prop, prec_ie) << "zero" << " " << ind_eff_store << " " <<  ind_eff_prop << endl;
+				cout << probfi - probif + anneal.phi_IE*Li_change_ind_eff(ind_eff_store, ind_eff_prop, prec_ie) << "zero" << " " << ind_eff_store << " " <<  ind_eff_prop << endl;
 			}
 				
 			if(indiv.group == UNSET) check_one(al,1);
@@ -551,7 +551,7 @@ void Model::cloglog_propose_infectivity_ind_effects(vector <IndValue> &ind_value
 
 
 /// CHecks how ie/var joint proposals can be made
-void Model::cloglog_propose_joint_ie_var(vector <IndValue> &ind_value, vector <double> &param_value, vector <double> &L_ind_effect, vector <double> &L_cloglog, double &prior, vector <Jump> &pjie_jump, const bool burnin, const Quench &quench) const
+void Model::cloglog_propose_joint_ie_var(vector <IndValue> &ind_value, vector <double> &param_value, vector <double> &L_ind_effect, vector <double> &L_cloglog, double &prior, vector <Jump> &pjie_jump, const bool burnin, const Anneal &anneal) const
 {
 	timer[TIME_JOINT_IEVAR].start();
 		
@@ -587,7 +587,7 @@ void Model::cloglog_propose_joint_ie_var(vector <IndValue> &ind_value, vector <d
 		
 			auto prior_prop = calculate_prior(param_value);
 			
-			auto al = exp(quench.phi_L*dL + quench.phi_Pr*(prior_prop-prior) + 2*log(fac));
+			auto al = exp(anneal.phi_L*dL + anneal.phi_Pr*(prior_prop-prior) + 2*log(fac));
 	
 			jump.ntr++;
 			if (MH_proposal(al,120)) {
@@ -643,7 +643,7 @@ void MCMC::cloglog_trace_output(const int s)
 	auto num_infected = 0;
 	
 	trace << '\t' << num_infected;
-	trace << '\t' << log(quench.phi_L); 
+	trace << '\t' << log(anneal.phi_L); 
 	trace << endl;
 }
 

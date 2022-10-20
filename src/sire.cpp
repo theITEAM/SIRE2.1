@@ -36,6 +36,8 @@
 // Simulate using: ./sire cloglog/sus_template.xml 0 0
 // Simulate using: ./sire cloglog/susinf_size_template.xml 0 0
 // Simulate using: ./sire cloglog/susinf_size10_template.xml 0 0
+// mpirun -n 20 ./sire Fishboost/data/expt1_t0.xml 0
+// mpirun -n 20 ./sire examples/example1.xml 0
 
 // Inference using: nohup ./sire cloglog/Data_files/ALG_1_sus_h2_0.001.xml 0 > alg1
 // ./sire cloglog/Data_files/test.xml 0
@@ -128,14 +130,14 @@ int main(int argc, char *argv[])
 
 				for(auto s = 0; s < model.nsample; s++) {   // Iterates over MCMC samples
 					show_progress(s, model.nsample, 100);
-					//if (s % 1000 == 0) cout << "Sample: " << s << " / " << model.nsample << " " << mcmc.quench.phi_L <<  endl;
+					//if (s % 1000 == 0) cout << "Sample: " << s << " / " << model.nsample << " " << mcmc.anneal.phi_L <<  endl;
 
 					if (s < model.nburnin)
 						mcmc.burnin = true;                     // Determines if burnin or not
 					else
 						mcmc.burnin = false;
 
-					mcmc.set_quench(s);                       // Sets inverse temperatures for quenching 
+					mcmc.set_anneal(s);                       // Sets inverse temperatures for annealing 
 					
 					mcmc.update();                            // Performs MCMC updates
 
@@ -153,7 +155,7 @@ int main(int argc, char *argv[])
 					if (mcmc.burnin == false)                 // Updates posterior average of individual effects (to calcualte PA later)
 						mcmc.ind_effect_posterior_mean_update();
 					
-					//if(s == model.nburnin) mcmc.optimum_quench_schedule();
+					//if(s == model.nburnin) mcmc.optimum_anneal_schedule();
 				}
 			
 				auto dir = model.output_dir;
@@ -162,7 +164,7 @@ int main(int argc, char *argv[])
 
 				mcmc.output_statistics();  // Outputs diagnostic information
 				
-				mcmc.check_quenching();
+				mcmc.check_annealing();
 			}
 			break;
 			

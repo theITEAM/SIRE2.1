@@ -6,7 +6,7 @@
 
 using namespace std;
 
-vector <string> split(const string &s, char delimiter);
+vector <string> split(string s, char delimiter);
 double number(const string &s);
 string num_out(const double x);
 void add_to_list(vector <int> &vec, const int val);

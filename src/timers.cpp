@@ -57,7 +57,7 @@ void output_timers(string file)
 			switch(sel){
 				case TIME_TOTAL: break;
 				case TIME_UPDATE: text = "Overall MCMC update"; break; 
-				case TIME_QUENCH: text = "Quench"; break; 
+				case TIME_anneal: text = "anneal"; break; 
 				case TIME_COVAR: text = "Covariate"; break; 
 				case TIME_COVAR_INIT: text = "Covariate initialise"; break; 
 				case TIME_TEMP: text = "Temp"; break; 

@@ -37,7 +37,7 @@ void Model::switch_on_group_effect(string sigma) {
 
 
 /// <akes proposals to the parameter sigma (standard deviation in the group effects)
-void Model::propose_group_effect_sigma(vector <double> &param_value, double &prior, vector <Jump> &param_jump, const bool burnin, const Quench &quench) const {
+void Model::propose_group_effect_sigma(vector <double> &param_value, double &prior, vector <Jump> &param_jump, const bool burnin, const Anneal &anneal) const {
 	// cout << "Model::propose_group_effect_sigma()" << endl; // DEBUG
 	timer[TIME_GROUP_SD].start();
 
@@ -51,7 +51,7 @@ void Model::propose_group_effect_sigma(vector <double> &param_value, double &pri
 		param_value[th] += normal_sample(0, jump.size);
 
 		auto prior_propose = calculate_prior(param_value);
-		auto al = exp(quench.phi_Pr*(prior_propose - prior));
+		auto al = exp(anneal.phi_Pr*(prior_propose - prior));
 
 		jump.ntr++;
 		if (MH_proposal(al,13)) {
@@ -70,7 +70,7 @@ void Model::propose_group_effect_sigma(vector <double> &param_value, double &pri
 
 
 /// Makes proposals to the group effects
-void Model::propose_group_effect(const vector <IndValue> &ind_value, vector <double> &param_value, vector <double> &L_inf_events, double &prior, vector <Jump> &param_jump, const bool burnin, const Quench &quench) const {
+void Model::propose_group_effect(const vector <IndValue> &ind_value, vector <double> &param_value, vector <double> &L_inf_events, double &prior, vector <Jump> &param_jump, const bool burnin, const Anneal &anneal) const {
 	// cout << "Model::propose_group_effect()" << endl; // DEBUG
 	for (auto g = 0; g < ngroup; g++) {
 		const auto &gr = group[g];
@@ -93,7 +93,7 @@ void Model::propose_group_effect(const vector <IndValue> &ind_value, vector <dou
 			// Calculates the Metropolis-Hastings acceptance probability
 			auto L_propose = likelihood_inf_events_fast(precalc, param_value[th]);
 			auto prior_change = calculate_prior_change(th, param_store, param_value);
-			auto al = exp(quench.phi_L*(L_propose - L_inf_events[g]) + quench.phi_Pr*prior_change);
+			auto al = exp(anneal.phi_L*(L_propose - L_inf_events[g]) + anneal.phi_Pr*prior_change);
 
 			jump.ntr++;
 			if (MH_proposal(al,20)) {

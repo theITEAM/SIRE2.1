@@ -1,0 +1,50 @@
+<?xml version='2.0' encoding='UTF-8' ?>
+
+<SIRE version='2.0'>
+
+<mcmc output_dir='Output' nsample= '20000' burnin='5000' thin='1' anneal='on' anneal_power='4'/>
+
+<!-- This defines the different comparments in the model -->
+<comp name='S'/>
+<comp name='I' relative_infectivity='1' />
+<comp name='R'/>
+
+<!-- This defines the different transition in the model -->
+<trans from='S' to='I' type='infection' beta='beta' inf_model='density dependent' data_column='It' individual_effect='g_a,g_e' />
+<trans from='I' to='R' type='exp' mean='m' data_column='Rt' />
+
+<!-- This defines the covariance matrices between different individual effects -->
+<covariance individual_effect='g_a' relationship_matrix='A'>
+<variance>
+omega_gg
+</variance>
+</covariance>
+
+<covariance individual_effect='g_e' relationship_matrix='I'>
+<variance>
+sigma_gg
+</variance>
+</covariance>
+
+<!-- The observation period for all epidemics -->
+<inference tmin='0' tmax='infinity'/>
+
+<!-- The observation period for all epidemics -->
+<observation tmin='0' tmax='infinity'/>
+
+<!-- This specifies the priors for all the parameters -->
+<prior parameter='beta' type='Flat' val1='0' val2='0.2'/>
+<prior parameter='m' type='Flat' val1='0' val2='10'/>
+<prior parameter='omega_gg' type='Flat' val1='0' val2='4'/>
+<prior parameter='sigma_gg' type='Flat' val1='0' val2='4'/>
+
+<!-- 'Datatable' provides information about individuals -->
+<!-- 'id' denote the column which gives the unique ids for individuals -->
+<!-- 'group' denotes the group to which an individual belongs -->
+<!-- 'initial_comp' denotes the initial compartment the individual is in -->
+<!-- If fixed effects are added to the model then columns specifying them must be provided -->
+<!-- Columns for actual individual effects can be specified (to calculate prediction accuracy) -->
+<datatable file='examples/datatable25.csv' id='id' sire='sire' dam='dam' group='group' initial_comp='init. comp.' g_a='g_a' g_e='g_e' prediction_accuracy='type'/>
+
+</SIRE>
+

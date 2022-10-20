@@ -48,8 +48,8 @@ struct Trans {
 	vector <int> fixed_effect;      // References any fixed effects acting on transition rate
 	vector <int> snp_effect;        // References any snp effects acting on transition rate
 
-	int data_column;                // The data column giving the time of the transition (if specified)
-	int data_column_initial;        // The data column giving the time for initial MCMC chain (for testing)
+	string data_column;             // The data column giving the time of the transition (if specified)
+	string data_column_initial;     // The data column giving the time for initial MCMC chain (for testing)
 
 	bool all_ind_effect_proposal;   // Set to true if using  proposals on all individual effects on transition
 };
@@ -65,7 +65,7 @@ struct DiagnosticTest {
 	int Se_param;                   // The sensitivity parameter
 	int Sp_param;                   // The specificity parameter
 
-	int data_column;                // The data column giving the diagnostic test information
+	string data_column;             // The data column giving the diagnostic test information
 };
 
 struct EvChange {
@@ -94,8 +94,10 @@ struct GroupEffect {
 };
 
 struct Table {
+	string file;                    // The file name
 	unsigned int ncol;              // The number of columns
 	unsigned int nrow;              // The number of rows
+	vector <string> heading;        // The headings for the columns
 	vector <vector <string> > ele;  // The elements of the table
 };
 
@@ -295,7 +297,7 @@ struct AddRemChange {             // Stores a change to adding / removing an ind
 	vector <double> trans_time;
 };
 
-struct Quench {                   // Parameters used for quenching
+struct Anneal {                   // Parameters used for annealing
 	double phi_L;                   // Inverse temperature on the event likelihood
 	double phi_IE;                  // Inverse temperature on individual effects
 	double phi_DT;                  // Inverse temperature on the disease diagnostic test likelihood

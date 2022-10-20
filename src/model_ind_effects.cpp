@@ -88,7 +88,7 @@ vector <InvCovMat> Model::calculate_inv_cov_matrix(const vector <double> &param_
 
 
 /// This makes proposals to parameters in the covariance matrices
-void Model::propose_covariance_matrices(const Covariance &cov, const vector <IndValue> &ind_value, vector <double> &param_value, double &L_ind_effect, double &prior, vector <Jump> &param_jump, const bool burnin, const Quench &quench) const {
+void Model::propose_covariance_matrices(const Covariance &cov, const vector <IndValue> &ind_value, vector <double> &param_value, double &L_ind_effect, double &prior, vector <Jump> &param_jump, const bool burnin, const Anneal &anneal) const {
 	// cout << "Model::propose_covariance_matrices()" << endl; // DEBUG
 	timer[TIME_COVAR_INIT].start();
 	auto precalc = set_precalc_cov(cov, ind_value);
@@ -111,7 +111,7 @@ void Model::propose_covariance_matrices(const Covariance &cov, const vector <Ind
 			if (prior_change != ZERO_PRIOR) {
 				L_propose = Li_cov_fast(cov, precalc, param_value);
 				if(L_propose == -LARGE) al = 0;
-				else al = exp(quench.phi_IE*(L_propose - L) + quench.phi_Pr*prior_change);
+				else al = exp(anneal.phi_IE*(L_propose - L) + anneal.phi_Pr*prior_change);
 			}
 
 			jump.ntr++;
@@ -207,11 +207,11 @@ double Model::Li_cov_fast(const Covariance &cov, const vector < vector <double> 
 /// Calculates the gradient of an individual effect
 double Model::ind_effect_gradient(unsigned int i, unsigned int ie, const vector <IndValue> &ind_value, const vector <InvCovMat> &inv_cov_matrix) const
 {emsg("Not here");
-	Quench quench;
-	quench.phi_L = 1;
-	quench.phi_DT = 1;
-	quench.phi_IE = 1;
-	quench.phi_Pr = 1;
+	Anneal anneal;
+	anneal.phi_L = 1;
+	anneal.phi_DT = 1;
+	anneal.phi_IE = 1;
+	anneal.phi_Pr = 1;
 	
 	PrecalcIndEff prec;
 	set_precalc_ind_eff(i, prec, ie, ind_value, inv_cov_matrix);

@@ -9,7 +9,7 @@ class MCMC {
 public:
 	bool burnin;                                   // Set to true if in the burnin phase
 
-	Quench quench;                                 // Stores the inverse temperatures
+	Anneal anneal;                                 // Stores the inverse temperatures
 	
 	vector <double> param_value;                   // The model parameter values
 
@@ -44,14 +44,12 @@ public:
 
 	vector <Sample> sample;                        // Stores samples from the chain (to generate diagnostics)
 
-	double phi, phi_run;                           // The quenching temperature
+	double phi, phi_run;                           // The annealing temperature
 	
 	vector <double> L_samp;
 	vector <double> burnin_Li;                     // Stores likelihood samples from the chain
 	vector <double> burnin_phi;                    // Stores likelihood samples from the chain
 
-	vector <double> phi_schedule;                  // Sets schedule for phi
-	
 	ofstream trace;                                // Used to output the trace plots
 
 	MCMC(const Model &model);
@@ -66,10 +64,10 @@ public:
 	void store_burnin_Li();
 	void ind_effect_posterior_mean_update();
 	void initialise_inf_sampler(int s);
-	void set_quench(unsigned int s);
+	void set_anneal(unsigned int s);
 	void temp();                                  // In check.cc
-	void check_quenching();
-	void optimum_quench_schedule();
+	void check_annealing();
+	//void optimum_quench_schedule();
 	void check_chain(unsigned int num);           // In check.cc
 	Statistics get_statistic(const vector <double> &vec) const;
 	void update_cloglog();                        // In model_comp_log_log
@@ -80,8 +78,7 @@ public:
 private:
 	
 	void initialise_proposals();
-	void load_phi_schedule();
-	double get_phi_from_schedule(unsigned int s) const;
+	//double get_phi_from_schedule(unsigned int s) const;
 	string stat(double num);
 	
 	Mpi mpi;

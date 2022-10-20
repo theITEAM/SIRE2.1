@@ -52,7 +52,7 @@ MCMC::MCMC(const Model &model) : model(model)
 
 	initialise_proposals();                                           // Initialises MCMC proposals
 
-	phi = 0; phi_run = 1;                                             // Initial quench temperature set to zero
+	phi = 0; phi_run = 1;                                             // Initial anneal temperature set to zero
 	
 	//load_phi_schedule();
 }
@@ -95,63 +95,65 @@ void MCMC::update()
 
 	timer[TIME_UPDATE].start();
 	
-	model.propose_transmission_rate(ind_value, param_value, L_inf_events, prior, param_jump, burnin, quench);
+	if(check_all == true) check_chain(0);
+
+	model.propose_transmission_rate(ind_value, param_value, L_inf_events, prior, param_jump, burnin, anneal);
 	
 	if(check_all == true) check_chain(1);
 
 	for (auto c = 0; c < model.ncovariance; c++)
-		model.propose_covariance_matrices(model.covariance[c], ind_value, param_value, L_ind_effect[c], prior, param_jump, burnin, quench);
+		model.propose_covariance_matrices(model.covariance[c], ind_value, param_value, L_ind_effect[c], prior, param_jump, burnin, anneal);
 
 	if(check_all == true) check_chain(2);
 	
-	model.propose_trans_params(ind_value, param_value, L_trans_events, prior, param_jump, burnin, quench);
+	model.propose_trans_params(ind_value, param_value, L_trans_events, prior, param_jump, burnin, anneal);
 
 	if(check_all == true) check_chain(3);
 
 	if (model.group_effect.on == true) {
-		model.propose_group_effect_sigma(param_value, prior, param_jump, burnin, quench);
-		model.propose_group_effect(ind_value, param_value, L_inf_events, prior, param_jump, burnin, quench);
+		model.propose_group_effect_sigma(param_value, prior, param_jump, burnin, anneal);
+		model.propose_group_effect(ind_value, param_value, L_inf_events, prior, param_jump, burnin, anneal);
 	}
 
 	if(check_all == true) check_chain(4);
 
-	model.propose_fixed_effects(ind_value, param_value, L_inf_events, L_trans_events, prior, param_jump, burnin,quench);
+	model.propose_fixed_effects(ind_value, param_value, L_inf_events, L_trans_events, prior, param_jump, burnin,anneal);
 
 	if(check_all == true) check_chain(5);
 
-	model.propose_snp_effects(ind_value, param_value, L_inf_events, L_trans_events, prior, param_jump, burnin, quench);
+	model.propose_snp_effects(ind_value, param_value, L_inf_events, L_trans_events, prior, param_jump, burnin, anneal);
 	
 	if(check_all == true) check_chain(6);
 
-	model.propose_event_times(ind_value, param_value, L_inf_events, L_trans_events, L_diag_test, event_jump, burnin, quench);
+	model.propose_event_times(ind_value, param_value, L_inf_events, L_trans_events, L_diag_test, event_jump, burnin, anneal);
 
 	if(check_all == true) check_chain(7);
 	
-	model.propose_mean_event_times(ind_value, param_value, L_inf_events, L_trans_events, L_diag_test, prior, mean_time_jump, burnin, quench);
+	model.propose_mean_event_times(ind_value, param_value, L_inf_events, L_trans_events, L_diag_test, prior, mean_time_jump, burnin, anneal);
 	
 	if(check_all == true) check_chain(8);
 	
-	model.propose_add_rem(ind_value, param_value, L_inf_events, L_trans_events, L_diag_test, add_rem_jump, burnin, quench);
+	model.propose_add_rem(ind_value, param_value, L_inf_events, L_trans_events, L_diag_test, add_rem_jump, burnin, anneal);
 	
 	if(check_all == true) check_chain(9);
 	
-	model.propose_susceptibility_ind_effects(ind_value, param_value, L_ind_effect, L_inf_events, ind_effect_jump, quench);
+	model.propose_susceptibility_ind_effects(ind_value, param_value, L_ind_effect, L_inf_events, ind_effect_jump, anneal);
 
 	if(check_all == true) check_chain(10);
 
-	model.propose_infectivity_ind_effects(ind_value, param_value, L_ind_effect, L_inf_events, ind_effect_jump, quench);
+	model.propose_infectivity_ind_effects(ind_value, param_value, L_ind_effect, L_inf_events, ind_effect_jump, anneal);
 
 	if(check_all == true) check_chain(11);
 
-	model.propose_trans_ind_effects(ind_value, param_value, L_ind_effect, L_trans_events, ind_effect_jump, quench);
+	model.propose_trans_ind_effects(ind_value, param_value, L_ind_effect, L_trans_events, ind_effect_jump, anneal);
 
 	if(check_all == true) check_chain(12);
 
-	model.propose_joint_ie_var(ind_value, param_value, L_ind_effect, L_inf_events, L_trans_events, prior, var_ie_joint_jump, burnin, quench);
+	model.propose_joint_ie_var(ind_value, param_value, L_ind_effect, L_inf_events, L_trans_events, prior, var_ie_joint_jump, burnin, anneal);
 
 	if(check_all == true) check_chain(120);
 
-	model.propose_Se_Sp(ind_value, param_value, L_diag_test, prior, param_jump, burnin, quench);
+	model.propose_Se_Sp(ind_value, param_value, L_diag_test, prior, param_jump, burnin, anneal);
 
 	if(check_all == true) check_chain(13);
 
@@ -161,197 +163,35 @@ void MCMC::update()
 }
 
 
-/// Sets inverse temperatures for quench
-void MCMC::set_quench(unsigned int s)
+/// Sets inverse temperatures for anneal
+void MCMC::set_anneal(unsigned int s)
 {
-	if(model.nquench != UNSET){
-		if(s < model.nprequench) phi = 0;
+	if(model.nanneal != UNSET){
+		if(s < model.npreanneal) phi = 0;
 		else{
+			/*
 			if(phi_schedule.size() > 0){
-				phi = get_phi_from_schedule(s-model.nprequench);
+				phi = get_phi_from_schedule(s-model.npreanneal);
 				//if(s%10 == 0) cout << s << " " << phi << " qq\n";
 			}
 			else{
-				double frac;
-				if(s < model.nprequench + model.nquench) frac = double(s-model.nprequench)/model.nquench;
-				else frac = 1;
+				*/
+			double frac;
+			if(s < model.npreanneal + model.nanneal) frac = double(s-model.npreanneal)/model.nanneal;
+			else frac = 1;
 		
-				phi = pow(frac,model.quench_power);
-			}
+			phi = pow(frac,model.anneal_power);
 		}
-		
-		/*
-		auto frac = double(s+1)/model.nquench;
-		if(frac > 1) frac = 1;
-		phi = pow(frac,model.quench_power);
-		
-		phi *= phi_ch[mpi.core];
-		*/
-		
-		//phi *= 0.8;
-		//cout << phi << "\n";
-		/*
-		if(s < 100) phi = 0;
-		else{
-			if(s >= model.nburnin) phi = phi_run;
-			else{
-				int smin = s - 500; if(smin < 0) smin = 0;
-			
-				auto av = 0.0, av2 = 0.0; 
-				for(auto ss = smin; ss < s; ss++){
-					av += burnin_Li[ss];
-					av2 += burnin_Li[ss]*burnin_Li[ss];
-				}
-				auto var = (av2/(s-smin)) - (av/(s-smin))*(av/(s-smin));
-
-				cout << s << " " << var << " " << phi << "var\n";
-				phi +=	0.25/var;
-				if(phi > phi_run) phi = phi_run;
-			}
-		}
-		*/
 	}
 	else phi = 1;
 
-	quench.phi_L = phi*phi_run;
-	quench.phi_DT = phi*phi_run;
-	quench.phi_IE = 1;
-	quench.phi_Pr = 1;
+	anneal.phi_L = phi*phi_run;
+	anneal.phi_DT = phi*phi_run;
+	anneal.phi_IE = 1;
+	anneal.phi_Pr = 1;
 }
 
 
-/// Works out the optimum schedule for quenching
-void MCMC::optimum_quench_schedule()
-{
-	auto ra = 200;
-
-	vector <double> var_st, phi_st;
-	for(auto s = model.nprequench; s < model.nprequench+model.nquench; s++){		
-		int smin = s - ra; if(smin < 0) smin = 0;
-		int smax = s + ra; if(smax > model.nburnin) smax = model.nburnin;
-		
-		/*
-		auto av = 0.0, av2 = 0.0; 
-		for(auto ss = smin; ss < smax; ss++){
-			av += burnin_Li[ss];
-			av2 += burnin_Li[ss]*burnin_Li[ss];
-		}
-		auto var = (av2/(smax-smin)) - (av/(smax-smin))*(av/(smax-smin));
-	
-		*/
-		
-		auto av = 0.0; 
-		for(auto ss = smin; ss < smax; ss++) av += burnin_Li[ss];
-		av /= smax-smin;
-		
-		auto av2 = 0.0, nav = 0.0; 
-		for(auto ss = smin; ss < smax; ss++){
-			if(burnin_Li[ss] > av){ av2 += (burnin_Li[ss]-av)*(burnin_Li[ss]-av); nav++;}
-		}
-		av2 /= nav;
-		auto var = av2;
-		
-		var_st.push_back(var);
-		phi_st.push_back(burnin_phi[s]);
-	}
-	
-	ofstream phi_schedule_out(model.output_dir + "/phi_schedule.txt");
-	auto A = 0.0;
-	for(auto i = 0; i < var_st.size()-1; i++){
-		A += 0.5*(var_st[i] + var_st[i+1])*(phi_st[i+1]-phi_st[i]);
-	}
-	
-	phi_schedule_out << 0 << endl;
-	
-	auto ndiv = 1000;
-	auto ph = 0.0;
-	auto dA = A/ndiv;
-	auto i = 0;
-	auto Adone = 0.0;
-	for(auto d = 0; d < ndiv; d++){
-		do{
-			auto frac = (ph-phi_st[i])/(phi_st[i+1]-phi_st[i]);
-			auto var = var_st[i]*(1-frac) + var_st[i+1]*frac;
-		
-			auto Aleft = 0.5*(var + var_st[i+1])*(phi_st[i+1]-ph);
-			if(Adone + Aleft > dA){
-				auto AA = dA-Adone;
-				
-				auto a = (var_st[i+1]-var)/(2*(phi_st[i+1]-ph));
-				auto b = var;
-				auto c = -AA;
-				
-				auto dph = (-b+sqrt(b*b-4*a*c))/(2*a);
-				
-				auto fracnew = ((ph+dph)-phi_st[i])/(phi_st[i+1]-phi_st[i]);
-				auto varnew = var_st[i]*(1-fracnew) + var_st[i+1]*fracnew;
-				Adone = 0; ph += dph; 
-				phi_schedule_out << ph << endl;
-				break;
-			}
-			
-			if(Aleft < 0) emsg("PP");
-			Adone += Aleft; ph = phi_st[i+1]; i++;
-		}while(i < phi_st.size());
-	}
-	
-	phi_schedule_out << 1 << endl;
-	phi_schedule_out.close();
-	
-	
-	load_phi_schedule();
-	ofstream p1("p1.txt");
-	for(auto s = 0; s < var_st.size()-1; s++){
-		p1 << s << " " << (phi_st[s+1]-phi_st[s])*var_st[s]	<< endl;
-	}
-	
-	ofstream p2("p2.txt");
-	for(auto s = 0; s < phi_schedule.size()-1; s++){
-		auto ph = phi_schedule[s];
-		
-		auto ss = 0; while(ss < phi_st.size() && ph > phi_st[ss]) ss++;
-		
-		p2 << s << " " << (phi_schedule[s+1]-phi_schedule[s])*var_st[ss] << " " << phi_schedule[s] << " " << phi_st[ss] << endl;
-	}
-	
-	ofstream phiout(model.output_dir + "/phi_variation.txt");
-	auto P = model.quench_power;
-	for(auto s = 0; s < var_st.size()-1; s++){
-		auto f = double(s)/var_st.size();
-		phiout << s << " " << phi_st[s] << " " << get_phi_from_schedule(s) << " " << var_st[s] << " " << phi_st[s+1]-phi_st[s]  << endl;
-	}
-}
-
-
-/// If available loads schedule in phi
-void MCMC::load_phi_schedule()
-{
-	ifstream phi_schedule_in(model.output_dir + "/phi_schedule.txt");
-	if(!phi_schedule_in) return;
-		
-	//cout << "Loading phi schedule..." << endl;
-	
-	phi_schedule.clear();
-	while(!phi_schedule_in.eof()){
-		double phi;
-		phi_schedule_in >> phi;
-		phi_schedule.push_back(phi);
-	}
-}
-
-
-/// Gets the value of pho from the loaded scedule
-double MCMC::get_phi_from_schedule(unsigned int s) const
-{
-	if(s >= model.nquench) return 1;
-	
-	auto f = (phi_schedule.size()-1)*(double(s)/model.nquench);
-	auto i = int(f);
-	auto frac = f-i;
-	return phi_schedule[i]*(1-frac) + phi_schedule[i+1]*frac;
-}
-
- 
 /// Intialises the trace plot
 void MCMC::trace_initialise(const string file) {
 	// cout << "MCMC::trace_initialise()" << endl; // DEBUG
@@ -417,7 +257,7 @@ void MCMC::trace_output(const int s)
 			num_infected++;
 	}
 	trace << '\t' << num_infected;
-	trace << '\t' << log(quench.phi_L); 
+	trace << '\t' << log(anneal.phi_L); 
 	trace << endl;
 }
 
@@ -854,7 +694,7 @@ void MCMC::store_sample() {
 }
 
 
-/// Generates a sample of the likelihood (to aid calculation of quenching
+/// Generates a sample of the likelihood (to aid calculation of annealing
 void MCMC::store_burnin_Li() 
 {
 	auto sum = 0.0;
@@ -1005,8 +845,8 @@ void MCMC::initialise_inf_sampler(int s) {
 }
 
 
-/// Checks the effect of quenching
-void MCMC::check_quenching()
+/// Checks the effect of annealing
+void MCMC::check_annealing()
 {
 	auto chain_sample = mpi.gather_sample(sample);
 	

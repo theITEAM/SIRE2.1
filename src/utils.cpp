@@ -24,7 +24,10 @@ void set_seed(const int i) {
 
 
 /// Split up a string using a specified delimiter
-vector<string> split(const string &s, char delimiter) {
+vector<string> split(string s, char delimiter) 
+{
+	if(s.length()>1 && s.substr(s.length()-1,1) == "\r") s = s.substr(0,s.length()-1);
+	
 	vector<string> splits;
 	stringstream ss(s);
 	string item;
